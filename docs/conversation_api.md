@@ -26,7 +26,7 @@ POST /v1/sessions
 }
 ```
 
-`roomId` and `peerId` are optional selection hints. The response must include a non-empty string in `id` or `sessionId`. Peer metadata may be nested under `peer` or returned as `peerName`.
+`roomId` and `peerId` are optional selection hints. They are included only for a validated remote discovery catalog. While the visibly disclosed bundled sample catalog is active, `ConversationService` removes both hints and sends a generic match request, so sample identities never reach the backend. The response must include a non-empty string in `id` or `sessionId`. Peer metadata may be nested under `peer` or returned as `peerName`.
 
 ```json
 {

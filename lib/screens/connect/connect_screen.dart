@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/status_notice.dart';
 import '../../l10n/l10n_state.dart';
 import '../../l10n/languages.dart';
 import '../../services/conversation_service.dart';
@@ -22,6 +23,13 @@ class ConnectScreen extends StatelessWidget {
     final online = context.read<OnlineService>();
     final session = context.read<SessionService>();
     final conversation = context.read<ConversationService>();
+
+    // Preview entries are presentation-only. A configured chat backend may
+    // receive a generic match request, but never a built-in room/member ID.
+    if (online.isPreviewCatalog) {
+      room = null;
+      member = null;
+    }
 
     if (conversation.isStarting || conversation.isActive) return;
     if (!online.isConnected && !conversation.isPreviewMode) {
@@ -103,84 +111,156 @@ class ConnectScreen extends StatelessWidget {
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 760),
-          child: CustomScrollView(
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 112),
-                sliver: SliverList.list(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                l10n.t('discoverTitle'),
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.headlineMedium,
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                l10n.t('discoverBody'),
-                                style: Theme.of(context).textTheme.bodyMedium,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        _OnlineBadge(online: online),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    _RandomConnectCard(
-                      onlineCount: online.onlineCount,
-                      onTap: () => _startSession(context),
-                    ),
-                    const SizedBox(height: 30),
-                    Text(
-                      l10n.t('trendingRooms'),
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 14),
-                    for (final room in online.rooms) ...[
-                      _RoomListCard(
-                        room: room,
-                        onTap: () => _startSession(context, room: room),
-                      ),
-                      const SizedBox(height: 11),
-                    ],
-                    const SizedBox(height: 20),
-                    Text(
-                      l10n.t('peopleAroundWorld'),
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 14),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 240,
-                            mainAxisExtent: 176,
-                            crossAxisSpacing: 12,
-                            mainAxisSpacing: 12,
-                          ),
-                      itemCount: online.members.length,
-                      itemBuilder: (context, index) {
-                        final member = online.members[index];
-                        return _MemberCard(
-                          member: member,
-                          onTap: () => _startSession(context, member: member),
-                        );
-                      },
-                    ),
-                  ],
-                ),
+          child: RefreshIndicator(
+            color: AppColors.primaryBright,
+            backgroundColor: AppColors.surfaceHigh,
+            onRefresh: online.refresh,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
               ),
-            ],
+              slivers: [
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 112),
+                  sliver: SliverList.list(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.t('discoverTitle'),
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.headlineMedium,
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  l10n.t('discoverBody'),
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          _OnlineBadge(online: online),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      if (online.hasRemoteDiscovery &&
+                          (!online.isInitialized || online.isRefreshing)) ...[
+                        Semantics(
+                          label: l10n.t('refreshingDiscovery'),
+                          child: const LinearProgressIndicator(minHeight: 3),
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (online.isPreviewCatalog) ...[
+                        StatusNotice(
+                          title: l10n.t('discoveryPreviewTitle'),
+                          message: l10n.t('discoveryPreviewBody'),
+                          icon: Icons.science_outlined,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (!online.isConnected) ...[
+                        StatusNotice(
+                          title: l10n.t('offline').toUpperCase(),
+                          message: l10n.t('discoveryOfflineBody'),
+                          icon: Icons.wifi_off_rounded,
+                          color: AppColors.coral,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      if (online.isConnected &&
+                          online.discoveryError != null) ...[
+                        StatusNotice(
+                          title: l10n.t('discoveryRefreshFailedTitle'),
+                          message: l10n.t('discoveryRefreshFailedBody'),
+                          icon: Icons.cloud_off_rounded,
+                          color: AppColors.coral,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      const SizedBox(height: 6),
+                      _RandomConnectCard(
+                        onlineCount: online.onlineCount,
+                        sampleCount: online.members.length,
+                        isPreview: online.isPreviewCatalog,
+                        isConnected: online.isConnected,
+                        onTap: () => _startSession(context),
+                      ),
+                      const SizedBox(height: 30),
+                      Text(
+                        l10n.t('trendingRooms'),
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 14),
+                      if (online.rooms.isEmpty)
+                        StatusNotice(
+                          title: l10n.t('trendingRooms'),
+                          message: l10n.t('noLiveRooms'),
+                          icon: Icons.forum_outlined,
+                          color: AppColors.textMuted,
+                        )
+                      else
+                        for (final room in online.rooms) ...[
+                          _RoomListCard(
+                            room: room,
+                            isPreview: online.isPreviewCatalog,
+                            isConnected: online.isConnected,
+                            onTap: online.isConnected || online.isPreviewCatalog
+                                ? () => _startSession(context, room: room)
+                                : null,
+                          ),
+                          const SizedBox(height: 11),
+                        ],
+                      const SizedBox(height: 20),
+                      Text(
+                        l10n.t('peopleAroundWorld'),
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      const SizedBox(height: 14),
+                      if (online.members.isEmpty)
+                        StatusNotice(
+                          title: l10n.t('peopleAroundWorld'),
+                          message: l10n.t('noLiveMembers'),
+                          icon: Icons.person_search_rounded,
+                          color: AppColors.textMuted,
+                        )
+                      else
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                                maxCrossAxisExtent: 240,
+                                mainAxisExtent: 176,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                              ),
+                          itemCount: online.members.length,
+                          itemBuilder: (context, index) {
+                            final member = online.members[index];
+                            return _MemberCard(
+                              member: member,
+                              isPreview: online.isPreviewCatalog,
+                              isConnected: online.isConnected,
+                              onTap:
+                                  online.isPreviewCatalog ||
+                                      (online.isConnected && member.isOnline)
+                                  ? () => _startSession(context, member: member)
+                                  : null,
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -215,7 +295,11 @@ class _OnlineBadge extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(
-              online.isConnected ? '${online.onlineCount}' : l10n.t('offline'),
+              online.isPreviewCatalog
+                  ? l10n.t('previewCatalogShort')
+                  : online.isConnected
+                  ? '${online.onlineCount}'
+                  : l10n.t('offline'),
               style: TextStyle(
                 color: color,
                 fontSize: 11,
@@ -230,9 +314,18 @@ class _OnlineBadge extends StatelessWidget {
 }
 
 class _RandomConnectCard extends StatelessWidget {
-  const _RandomConnectCard({required this.onlineCount, required this.onTap});
+  const _RandomConnectCard({
+    required this.onlineCount,
+    required this.sampleCount,
+    required this.isPreview,
+    required this.isConnected,
+    required this.onTap,
+  });
 
   final int onlineCount;
+  final int sampleCount;
+  final bool isPreview;
+  final bool isConnected;
   final VoidCallback onTap;
 
   @override
@@ -281,7 +374,11 @@ class _RandomConnectCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  '$onlineCount ${l10n.t('onlineNow')}',
+                  isPreview
+                      ? l10n.t('sampleProfiles', {'count': sampleCount})
+                      : !isConnected
+                      ? l10n.t('offline')
+                      : '$onlineCount ${l10n.t('onlineNow')}',
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 10,
@@ -322,10 +419,17 @@ class _RandomConnectCard extends StatelessWidget {
 }
 
 class _RoomListCard extends StatelessWidget {
-  const _RoomListCard({required this.room, required this.onTap});
+  const _RoomListCard({
+    required this.room,
+    required this.isPreview,
+    required this.isConnected,
+    required this.onTap,
+  });
 
   final CommunityRoom room;
-  final VoidCallback onTap;
+  final bool isPreview;
+  final bool isConnected;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -356,6 +460,8 @@ class _RoomListCard extends StatelessWidget {
                   children: [
                     Text(
                       room.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     const SizedBox(height: 4),
@@ -370,10 +476,22 @@ class _RoomListCard extends StatelessWidget {
                     const SizedBox(height: 7),
                     Row(
                       children: [
-                        Icon(Icons.people_alt_rounded, color: accent, size: 14),
+                        Icon(
+                          isPreview
+                              ? Icons.science_outlined
+                              : !isConnected
+                              ? Icons.cloud_off_outlined
+                              : Icons.people_alt_rounded,
+                          color: accent,
+                          size: 14,
+                        ),
                         const SizedBox(width: 5),
                         Text(
-                          l10n.t('members', {'count': room.memberCount}),
+                          isPreview
+                              ? l10n.t('previewCatalogShort')
+                              : !isConnected
+                              ? l10n.t('presenceUnavailable')
+                              : l10n.t('members', {'count': room.memberCount}),
                           style: TextStyle(
                             color: accent,
                             fontSize: 10,
@@ -386,7 +504,10 @@ class _RoomListCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              FilledButton.tonal(onPressed: onTap, child: Text(l10n.t('join'))),
+              FilledButton.tonal(
+                onPressed: onTap,
+                child: Text(l10n.t(isPreview ? 'connect' : 'join')),
+              ),
             ],
           ),
         ),
@@ -396,10 +517,17 @@ class _RoomListCard extends StatelessWidget {
 }
 
 class _MemberCard extends StatelessWidget {
-  const _MemberCard({required this.member, required this.onTap});
+  const _MemberCard({
+    required this.member,
+    required this.isPreview,
+    required this.isConnected,
+    required this.onTap,
+  });
 
   final WorldMember member;
-  final VoidCallback onTap;
+  final bool isPreview;
+  final bool isConnected;
+  final VoidCallback? onTap;
 
   static const colors = [
     AppColors.primary,
@@ -411,8 +539,16 @@ class _MemberCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.read<L10nState>();
     final color = colors[member.avatarSeed % colors.length];
     final language = languageByCode(member.languageCode);
+    final presenceColor = isPreview
+        ? AppColors.amber
+        : !isConnected
+        ? AppColors.textMuted
+        : member.isOnline
+        ? AppColors.success
+        : AppColors.textMuted;
     return Card(
       child: InkWell(
         onTap: onTap,
@@ -437,22 +573,25 @@ class _MemberCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Positioned(
-                        right: 1,
-                        bottom: 1,
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: AppColors.success,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.surface,
-                              width: 2,
+                      if (!isPreview && isConnected)
+                        Positioned(
+                          right: 1,
+                          bottom: 1,
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: member.isOnline
+                                  ? AppColors.success
+                                  : AppColors.textMuted,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.surface,
+                                width: 2,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                   const Spacer(),
@@ -465,7 +604,12 @@ class _MemberCard extends StatelessWidget {
                 ],
               ),
               const Spacer(),
-              Text(member.name, style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                member.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 3),
               Text(
                 '${member.city}, ${member.country}',
@@ -476,22 +620,48 @@ class _MemberCard extends StatelessWidget {
                 ).textTheme.bodyMedium?.copyWith(fontSize: 11),
               ),
               const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceHigh,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  language.nativeName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.primaryBright,
-                    fontSize: 9,
-                    fontWeight: FontWeight.w700,
+              Row(
+                children: [
+                  Flexible(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surfaceHigh,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        language.nativeName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.primaryBright,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      isPreview
+                          ? l10n.t('previewCatalogShort')
+                          : !isConnected
+                          ? l10n.t('presenceUnavailable')
+                          : l10n.t(member.isOnline ? 'online' : 'offline'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: presenceColor,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

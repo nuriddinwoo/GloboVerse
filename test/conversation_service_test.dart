@@ -413,6 +413,127 @@ void main() {
     online.dispose();
   });
 
+  test('discovery refresh notifications do not force a chat poll', () async {
+    final translation = TranslationService();
+    final discoveryClient = MockClient(
+      (_) async =>
+          http.Response('{"onlineCount":0,"rooms":[],"members":[]}', 200),
+    );
+    final online = OnlineService(
+      client: discoveryClient,
+      endpoint: 'https://discovery.example.com',
+    );
+    var pollRequests = 0;
+    final chatClient = MockClient((request) async {
+      if (request.method == 'POST' && request.url.path == '/sessions') {
+        return http.Response('{"id":"quiet-session"}', 201);
+      }
+      if (request.method == 'GET') {
+        pollRequests += 1;
+        return http.Response('{}', 200);
+      }
+      if (request.method == 'DELETE') return http.Response('', 204);
+      return http.Response('Not found', 404);
+    });
+    final conversation = ConversationService(
+      translation,
+      online,
+      client: chatClient,
+      endpoint: 'https://api.example.com',
+      pollInterval: const Duration(hours: 1),
+      maximumPollInterval: const Duration(hours: 1),
+    );
+    await translation.init();
+    expect(
+      await conversation.start(sourceLanguage: 'en', targetLanguage: 'tg'),
+      isTrue,
+    );
+
+    expect(await online.refreshDiscovery(), isTrue);
+    await Future<void>.delayed(const Duration(milliseconds: 1));
+    expect(pollRequests, 0);
+
+    await conversation.end();
+    conversation.dispose();
+    translation.dispose();
+    online.dispose();
+    discoveryClient.close();
+    chatClient.close();
+  });
+
+  test('only validated remote discovery identities reach chat', () async {
+    final translation = TranslationService();
+    final discoveryClient = MockClient(
+      (_) async => http.Response(
+        '{"onlineCount":1,"rooms":[{"id":"remote-room",'
+        '"title":"Remote room","subtitle":"Live", "emoji":"🌍",'
+        '"memberCount":1,"languageCodes":["en","tg"],'
+        '"accentColor":"#123ABC"}],"members":[{"id":"remote-member",'
+        '"name":"Remote member","city":"Dushanbe",'
+        '"country":"Tajikistan","languageCode":"tg",'
+        '"isOnline":true}]}',
+        200,
+        headers: const {'content-type': 'application/json; charset=utf-8'},
+      ),
+    );
+    final online = OnlineService(
+      client: discoveryClient,
+      endpoint: 'https://discovery.example.com',
+    );
+    final startBodies = <Map<String, dynamic>>[];
+    final chatClient = MockClient((request) async {
+      if (request.method == 'POST' && request.url.path == '/sessions') {
+        startBodies.add(
+          Map<String, dynamic>.from(jsonDecode(request.body) as Map),
+        );
+        return http.Response('{"id":"safe-session"}', 201);
+      }
+      if (request.method == 'DELETE') return http.Response('', 204);
+      return http.Response('Not found', 404);
+    });
+    final conversation = ConversationService(
+      translation,
+      online,
+      client: chatClient,
+      endpoint: 'https://api.example.com',
+      automaticPolling: false,
+    );
+    await translation.init();
+
+    expect(
+      await conversation.start(
+        sourceLanguage: 'en',
+        targetLanguage: 'tg',
+        room: online.rooms.first,
+        member: online.members.first,
+      ),
+      isTrue,
+    );
+    expect(startBodies.single, isNot(contains('roomId')));
+    expect(startBodies.single, isNot(contains('peerId')));
+    await conversation.end();
+
+    expect(await online.refreshDiscovery(), isTrue);
+    expect(
+      await conversation.start(
+        sourceLanguage: 'en',
+        targetLanguage: 'tg',
+        room: online.rooms.first,
+        member: online.members.first,
+      ),
+      isTrue,
+    );
+    expect(startBodies.last['roomId'], 'remote-room');
+    expect(startBodies.last['peerId'], 'remote-member');
+
+    await conversation.end();
+    conversation.dispose();
+    translation.dispose();
+    online.dispose();
+    discoveryClient.close();
+    chatClient.close();
+  });
+
   test('late remote replies cannot revive an ended session', () async {
     final translation = TranslationService();
     final online = OnlineService();

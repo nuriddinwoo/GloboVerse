@@ -13,7 +13,8 @@ GloboVerse is a dark, mobile-first Flutter experience for discovering people and
 - 184-language ISO catalog with safe Flutter locale fallback
 - Bundled English, Tajik, Russian, and Uzbek interface copy
 - Translation workspace with an optional remote provider and honest offline phrase preview
-- Discover feed, community rooms, and people cards
+- Configurable live discovery catalog with rooms, online totals, member presence, pull-to-refresh, and atomic fallback
+- Clearly disclosed sample discovery catalog until a valid remote catalog loads
 - Interactive translated conversations with live polling, read receipts, delivery retry, and reporting
 - Clearly disclosed on-device `GloboGuide` preview when no conversation API is configured
 - Persisted connection timer, one-hour passes, and VIP entitlement state
@@ -47,6 +48,7 @@ Do not commit credentials. Supply optional build-time configuration with `--dart
 flutter run \
   --dart-define=TRANSLATION_API_URL=https://api.example.com/translate \
   --dart-define=TRANSLATION_API_KEY=public-or-short-lived-token \
+  --dart-define=GLOBOVERSE_DISCOVERY_API_URL=https://api.example.com/v1 \
   --dart-define=GLOBOVERSE_CHAT_API_URL=https://api.example.com/v1 \
   --dart-define=GLOBOVERSE_API_TOKEN=short-lived-access-token \
   --dart-define=STRIPE_CHECKOUT_URL=https://example.com/checkout
@@ -64,6 +66,8 @@ The translation endpoint receives:
 ```
 
 It should return either `{ "translatedText": "Салом" }` or `{ "data": { "translatedText": "Салом" } }`. A detected source can be returned as `detectedLanguage`.
+
+When `GLOBOVERSE_DISCOVERY_API_URL` is set, the app fetches bounded room, member, online-count, and per-member presence data from `GET /discovery` using the contract in [docs/discovery_api.md](docs/discovery_api.md). Refreshes are atomic: an invalid or failed response retains the last valid catalog. Until one loads—or when the define is omitted—the interface clearly marks bundled rooms and profiles as samples. Sample room/member IDs are never sent to a configured chat backend.
 
 When `GLOBOVERSE_CHAT_API_URL` is omitted, conversations use a clearly labeled, on-device `GloboGuide` preview. No discovered member is impersonated and no chat message leaves the device. When it is set, the app uses the cursor-based REST contract in [docs/conversation_api.md](docs/conversation_api.md), polling only while online and in the foreground. `GLOBOVERSE_API_TOKEN` is optional and sent as a bearer token.
 

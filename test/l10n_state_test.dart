@@ -24,6 +24,29 @@ void main() {
       expect(state.t('continue'), 'Continue');
       expect(state.locale.languageCode, 'en');
     });
+
+    test('bundles discovery state copy in all interface languages', () {
+      const codes = ['en', 'tg', 'ru', 'uz'];
+      final previewTitles = <String>[];
+      for (final code in codes) {
+        final state = L10nState(code);
+        previewTitles.add(state.t('discoveryPreviewTitle'));
+        expect(
+          state.t('discoveryPreviewTitle'),
+          isNot('discoveryPreviewTitle'),
+        );
+        expect(
+          state.t('discoveryRefreshFailedBody'),
+          isNot('discoveryRefreshFailedBody'),
+        );
+        expect(
+          state.t('sampleProfiles', {'count': 5}),
+          isNot(contains('{count}')),
+        );
+        expect(state.t('presenceUnavailable'), isNot('presenceUnavailable'));
+      }
+      expect(previewTitles.toSet(), hasLength(codes.length));
+    });
   });
 
   test('ISO language catalog contains 184 unique codes', () {

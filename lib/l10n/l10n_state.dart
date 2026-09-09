@@ -112,6 +112,20 @@ const Map<String, Map<String, String>> _strings = {
     'offlinePreview': 'Offline phrase preview',
     'discoverTitle': 'Find your people',
     'discoverBody': 'Join a room and start a respectful conversation.',
+    'discoveryPreviewTitle': 'DISCOVERY PREVIEW',
+    'discoveryPreviewBody':
+        'These rooms and profiles are samples, not live member accounts. Sample identities are never used as match targets.',
+    'previewCatalogShort': 'SAMPLE',
+    'sampleProfiles': '{count} sample profiles',
+    'discoveryRefreshFailedTitle': 'LIVE DISCOVERY UNAVAILABLE',
+    'discoveryRefreshFailedBody':
+        'Showing the last available catalog. Pull down to try again.',
+    'discoveryOfflineBody':
+        'You are offline. The last available catalog is shown; live counts and presence may be stale.',
+    'presenceUnavailable': 'Status unknown',
+    'refreshingDiscovery': 'Refreshing discovery…',
+    'noLiveRooms': 'No live rooms are available right now.',
+    'noLiveMembers': 'No members are available right now.',
     'live': 'LIVE',
     'startSession': 'Start session',
     'endSession': 'End session',
@@ -235,6 +249,20 @@ const Map<String, Map<String, String>> _strings = {
     'offlinePreview': 'Намоиши офлайн',
     'discoverTitle': 'Ҳамсуҳбат пайдо кунед',
     'discoverBody': 'Ба ҳуҷра ворид шавед ва суҳбати боэҳтиромро оғоз кунед.',
+    'discoveryPreviewTitle': 'НАМОИШИ ҶУСТУҶӮ',
+    'discoveryPreviewBody':
+        'Ин ҳуҷраҳо ва профилҳо намунаанд, на ҳисобҳои воқеии онлайн. Шиносаҳои намунавӣ ҳеҷ гоҳ ҳамчун ҳадафи пайвастшавӣ истифода намешаванд.',
+    'previewCatalogShort': 'НАМУНА',
+    'sampleProfiles': '{count} профили намунавӣ',
+    'discoveryRefreshFailedTitle': 'ҶУСТУҶӮИ ЗИНДА ДАСТНОРАС АСТ',
+    'discoveryRefreshFailedBody':
+        'Феҳристи охирини дастрас нишон дода мешавад. Барои кӯшиши дубора ба поён кашед.',
+    'discoveryOfflineBody':
+        'Шумо офлайн ҳастед. Феҳристи охирини дастрас нишон дода мешавад; шумора ва ҳузур метавонанд кӯҳна бошанд.',
+    'presenceUnavailable': 'Ҳолат номаълум',
+    'refreshingDiscovery': 'Навсозии феҳрист…',
+    'noLiveRooms': 'Ҳоло ҳуҷраи зинда дастрас нест.',
+    'noLiveMembers': 'Ҳоло корбари дастрас нест.',
     'live': 'ЗИНДА',
     'startSession': 'Оғози суҳбат',
     'endSession': 'Анҷоми суҳбат',
@@ -347,6 +375,20 @@ const Map<String, Map<String, String>> _strings = {
     'copied': 'Скопировано',
     'discoverTitle': 'Найдите своих людей',
     'discoverBody': 'Присоединитесь к комнате и начните добрый разговор.',
+    'discoveryPreviewTitle': 'ПРЕДПРОСМОТР ПОИСКА',
+    'discoveryPreviewBody':
+        'Эти комнаты и профили — примеры, а не реальные аккаунты онлайн. Идентификаторы примеров никогда не используются как цель подключения.',
+    'previewCatalogShort': 'ПРИМЕР',
+    'sampleProfiles': 'Профили-примеры: {count}',
+    'discoveryRefreshFailedTitle': 'ЖИВОЙ ПОИСК НЕДОСТУПЕН',
+    'discoveryRefreshFailedBody':
+        'Показан последний доступный каталог. Потяните вниз, чтобы повторить.',
+    'discoveryOfflineBody':
+        'Вы не в сети. Показан последний доступный каталог; счётчики и статусы могут быть устаревшими.',
+    'presenceUnavailable': 'Статус неизвестен',
+    'refreshingDiscovery': 'Обновляем каталог…',
+    'noLiveRooms': 'Сейчас нет доступных комнат в эфире.',
+    'noLiveMembers': 'Сейчас нет доступных участников.',
     'live': 'В ЭФИРЕ',
     'startSession': 'Начать разговор',
     'endSession': 'Завершить',
@@ -447,6 +489,20 @@ const Map<String, Map<String, String>> _strings = {
     'copied': 'Nusxalandi',
     'discoverTitle': 'Suhbatdosh toping',
     'discoverBody': 'Xonaga qo‘shiling va samimiy suhbat boshlang.',
+    'discoveryPreviewTitle': 'QIDIRUV NAMOYISHI',
+    'discoveryPreviewBody':
+        'Bu xonalar va profillar namuna, haqiqiy onlayn hisoblar emas. Namuna identifikatorlari hech qachon ulanish maqsadi sifatida ishlatilmaydi.',
+    'previewCatalogShort': 'NAMUNA',
+    'sampleProfiles': '{count} ta namuna profil',
+    'discoveryRefreshFailedTitle': 'JONLI QIDIRUV MAVJUD EMAS',
+    'discoveryRefreshFailedBody':
+        'Oxirgi mavjud katalog ko‘rsatilmoqda. Qayta urinish uchun pastga torting.',
+    'discoveryOfflineBody':
+        'Siz oflaynsiz. Oxirgi mavjud katalog ko‘rsatilmoqda; jonli sonlar va holatlar eskirgan bo‘lishi mumkin.',
+    'presenceUnavailable': 'Holat noma’lum',
+    'refreshingDiscovery': 'Katalog yangilanmoqda…',
+    'noLiveRooms': 'Hozir jonli xonalar mavjud emas.',
+    'noLiveMembers': 'Hozir mavjud a’zolar yo‘q.',
     'live': 'JONLI',
     'startSession': 'Suhbatni boshlash',
     'endSession': 'Tugatish',

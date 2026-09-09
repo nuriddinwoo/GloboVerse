@@ -31,6 +31,7 @@ class ConversationService extends ChangeNotifier with WidgetsBindingObserver {
          '',
        ),
        _apiToken = (apiToken ?? _configuredApiToken).trim() {
+    _wasOnlineConnected = _online.isConnected;
     _online.addListener(_handleConnectivityChanged);
     WidgetsBinding.instance.addObserver(this);
   }
@@ -93,6 +94,7 @@ class ConversationService extends ChangeNotifier with WidgetsBindingObserver {
   bool _isReporting = false;
   bool _isReported = false;
   bool _isForeground = true;
+  late bool _wasOnlineConnected;
   bool _isDisposed = false;
 
   ConversationStatus get status => _status;
@@ -122,11 +124,12 @@ class ConversationService extends ChangeNotifier with WidgetsBindingObserver {
     String fallbackPeerName = 'Conversation',
   }) {
     if (_isDisposed || _isStarting) return Future<bool>.value(false);
+    final canUseDiscoveryTargets = !_online.isPreviewCatalog;
     _isStarting = true;
     notifyListeners();
     return _startConversation(
-      room: room,
-      member: member,
+      room: canUseDiscoveryTargets ? room : null,
+      member: canUseDiscoveryTargets ? member : null,
       sourceLanguage: sourceLanguage,
       targetLanguage: targetLanguage,
       fallbackPeerName: fallbackPeerName,
@@ -146,6 +149,13 @@ class ConversationService extends ChangeNotifier with WidgetsBindingObserver {
   }) async {
     await end(notify: false);
     if (_isDisposed) return false;
+
+    // The bundled discovery catalog is illustrative only. Keep its stable
+    // sample identifiers out of every configured chat backend request.
+    if (_online.isPreviewCatalog) {
+      room = null;
+      member = null;
+    }
 
     final generation = ++_generation;
     _messages.clear();
@@ -876,8 +886,11 @@ class ConversationService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _handleConnectivityChanged() {
-    if (_isDisposed || !isActive || isPreviewMode) return;
-    if (!_online.isConnected) {
+    final connected = _online.isConnected;
+    if (_isDisposed || connected == _wasOnlineConnected) return;
+    _wasOnlineConnected = connected;
+    if (!isActive || isPreviewMode) return;
+    if (!connected) {
       _pollTimer?.cancel();
       _pollTimer = null;
     } else {

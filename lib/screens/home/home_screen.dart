@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/brand_mark.dart';
 import '../../core/widgets/section_header.dart';
+import '../../core/widgets/status_notice.dart';
 import '../../l10n/l10n_state.dart';
 import '../../l10n/languages.dart';
 import '../../services/online_service.dart';
@@ -34,80 +35,151 @@ class HomeScreen extends StatelessWidget {
 
     return SafeArea(
       bottom: false,
-      child: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 760),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 110),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _Header(
-                        name: displayName,
-                        isOnline: online.isConnected,
-                        onlineCount: online.onlineCount,
-                      ),
-                      const SizedBox(height: 28),
-                      Text(
-                        l10n.t('hello', {'name': displayName}),
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        l10n.t('worldWaiting'),
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppColors.textMuted,
+      child: RefreshIndicator(
+        color: AppColors.primaryBright,
+        backgroundColor: AppColors.surfaceHigh,
+        onRefresh: online.refresh,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 110),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _Header(
+                          name: displayName,
+                          isOnline: online.isConnected,
+                          onlineCount: online.onlineCount,
+                          isPreviewCatalog: online.isPreviewCatalog,
                         ),
-                      ),
-                      const SizedBox(height: 22),
-                      _SessionCard(
-                        session: session,
-                        onAddTime: () => showBillingSheet(context),
-                        onConnect: onConnect,
-                      ),
-                      const SizedBox(height: 30),
-                      SectionHeader(
-                        title: l10n.t('trendingRooms'),
-                        action: TextButton(
-                          onPressed: onConnect,
-                          child: Text(l10n.t('seeAll')),
+                        const SizedBox(height: 28),
+                        Text(
+                          l10n.t('hello', {'name': displayName}),
+                          style: Theme.of(context).textTheme.headlineMedium,
                         ),
-                      ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        height: 184,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          physics: const BouncingScrollPhysics(),
-                          itemCount: online.rooms.length,
-                          separatorBuilder: (_, _) => const SizedBox(width: 12),
-                          itemBuilder: (context, index) => _RoomCard(
-                            room: online.rooms[index],
-                            onTap: onConnect,
+                        const SizedBox(height: 5),
+                        Text(
+                          l10n.t('worldWaiting'),
+                          style: Theme.of(context).textTheme.bodyLarge
+                              ?.copyWith(color: AppColors.textMuted),
+                        ),
+                        const SizedBox(height: 18),
+                        if (online.hasRemoteDiscovery &&
+                            (!online.isInitialized || online.isRefreshing)) ...[
+                          Semantics(
+                            label: l10n.t('refreshingDiscovery'),
+                            child: const LinearProgressIndicator(minHeight: 3),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        if (online.isPreviewCatalog) ...[
+                          StatusNotice(
+                            title: l10n.t('discoveryPreviewTitle'),
+                            message: l10n.t('discoveryPreviewBody'),
+                            icon: Icons.science_outlined,
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        if (!online.isConnected) ...[
+                          StatusNotice(
+                            title: l10n.t('offline').toUpperCase(),
+                            message: l10n.t('discoveryOfflineBody'),
+                            icon: Icons.wifi_off_rounded,
+                            color: AppColors.coral,
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        if (online.isConnected &&
+                            online.discoveryError != null) ...[
+                          StatusNotice(
+                            title: l10n.t('discoveryRefreshFailedTitle'),
+                            message: l10n.t('discoveryRefreshFailedBody'),
+                            icon: Icons.cloud_off_rounded,
+                            color: AppColors.coral,
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                        const SizedBox(height: 10),
+                        _SessionCard(
+                          session: session,
+                          onAddTime: () => showBillingSheet(context),
+                          onConnect: onConnect,
+                        ),
+                        const SizedBox(height: 30),
+                        SectionHeader(
+                          title: l10n.t('trendingRooms'),
+                          action: TextButton(
+                            onPressed: onConnect,
+                            child: Text(l10n.t('seeAll')),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 30),
-                      SectionHeader(
-                        title: l10n.t('peopleAroundWorld'),
-                        subtitle:
-                            '${online.onlineCount} ${l10n.t('onlineNow')}',
-                      ),
-                      const SizedBox(height: 16),
-                      _MembersStrip(members: online.members),
-                      const SizedBox(height: 28),
-                      _TranslateBanner(onTap: onTranslate),
-                    ],
+                        const SizedBox(height: 14),
+                        if (online.rooms.isEmpty)
+                          StatusNotice(
+                            title: l10n.t('trendingRooms'),
+                            message: l10n.t('noLiveRooms'),
+                            icon: Icons.forum_outlined,
+                            color: AppColors.textMuted,
+                          )
+                        else
+                          SizedBox(
+                            height: 184,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: online.rooms.length,
+                              separatorBuilder: (_, _) =>
+                                  const SizedBox(width: 12),
+                              itemBuilder: (context, index) => _RoomCard(
+                                room: online.rooms[index],
+                                isPreview: online.isPreviewCatalog,
+                                isConnected: online.isConnected,
+                                onTap: onConnect,
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 30),
+                        SectionHeader(
+                          title: l10n.t('peopleAroundWorld'),
+                          subtitle: online.isPreviewCatalog
+                              ? l10n.t('sampleProfiles', {
+                                  'count': online.members.length,
+                                })
+                              : !online.isConnected
+                              ? l10n.t('presenceUnavailable')
+                              : '${online.onlineCount} ${l10n.t('onlineNow')}',
+                        ),
+                        const SizedBox(height: 16),
+                        if (online.members.isEmpty)
+                          StatusNotice(
+                            title: l10n.t('peopleAroundWorld'),
+                            message: l10n.t('noLiveMembers'),
+                            icon: Icons.person_search_rounded,
+                            color: AppColors.textMuted,
+                          )
+                        else
+                          _MembersStrip(
+                            members: online.members,
+                            showPresence:
+                                !online.isPreviewCatalog && online.isConnected,
+                          ),
+                        const SizedBox(height: 28),
+                        _TranslateBanner(onTap: onTranslate),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -118,14 +190,17 @@ class _Header extends StatelessWidget {
     required this.name,
     required this.isOnline,
     required this.onlineCount,
+    required this.isPreviewCatalog,
   });
 
   final String name;
   final bool isOnline;
   final int onlineCount;
+  final bool isPreviewCatalog;
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.read<L10nState>();
     return Row(
       children: [
         const BrandMark(size: 39, showWordmark: true),
@@ -154,7 +229,11 @@ class _Header extends StatelessWidget {
               ),
               const SizedBox(width: 7),
               Text(
-                isOnline ? _compactCount(onlineCount) : '—',
+                isPreviewCatalog
+                    ? l10n.t('previewCatalogShort')
+                    : isOnline
+                    ? _compactCount(onlineCount)
+                    : '—',
                 style: Theme.of(
                   context,
                 ).textTheme.labelLarge?.copyWith(fontSize: 12),
@@ -299,9 +378,16 @@ class _SessionCard extends StatelessWidget {
 }
 
 class _RoomCard extends StatelessWidget {
-  const _RoomCard({required this.room, required this.onTap});
+  const _RoomCard({
+    required this.room,
+    required this.isPreview,
+    required this.isConnected,
+    required this.onTap,
+  });
 
   final CommunityRoom room;
+  final bool isPreview;
+  final bool isConnected;
   final VoidCallback onTap;
 
   @override
@@ -380,7 +466,11 @@ class _RoomCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  l10n.t('members', {'count': room.memberCount}),
+                  isPreview
+                      ? l10n.t('previewCatalogShort')
+                      : !isConnected
+                      ? l10n.t('presenceUnavailable')
+                      : l10n.t('members', {'count': room.memberCount}),
                   style: TextStyle(
                     color: accent,
                     fontSize: 11,
@@ -397,9 +487,10 @@ class _RoomCard extends StatelessWidget {
 }
 
 class _MembersStrip extends StatelessWidget {
-  const _MembersStrip({required this.members});
+  const _MembersStrip({required this.members, required this.showPresence});
 
   final List<WorldMember> members;
+  final bool showPresence;
 
   static const _colors = [
     AppColors.primary,
@@ -411,6 +502,7 @@ class _MembersStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.read<L10nState>();
     return SizedBox(
       height: 92,
       child: ListView.separated(
@@ -438,22 +530,30 @@ class _MembersStrip extends StatelessWidget {
                         ),
                       ),
                     ),
-                    Positioned(
-                      right: 0,
-                      bottom: 1,
-                      child: Container(
-                        width: 13,
-                        height: 13,
-                        decoration: BoxDecoration(
-                          color: AppColors.success,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.background,
-                            width: 2.5,
+                    if (showPresence)
+                      Positioned(
+                        right: 0,
+                        bottom: 1,
+                        child: Tooltip(
+                          message: l10n.t(
+                            member.isOnline ? 'online' : 'offline',
+                          ),
+                          child: Container(
+                            width: 13,
+                            height: 13,
+                            decoration: BoxDecoration(
+                              color: member.isOnline
+                                  ? AppColors.success
+                                  : AppColors.textMuted,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.background,
+                                width: 2.5,
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
                   ],
                 ),
                 const SizedBox(height: 7),
