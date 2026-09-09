@@ -3,6 +3,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'settings_service.dart';
 
+/// Dormant HTTPS checkout launcher. Keep it out of purchase UI until verified
+/// Stripe webhooks update the authenticated snapshots consumed by the app.
 class StripeService extends ChangeNotifier {
   StripeService(this._settings);
 
@@ -11,6 +13,7 @@ class StripeService extends ChangeNotifier {
 
   bool _isReady = false;
   bool _isOpening = false;
+  Uri? _checkoutUri;
   String? _error;
 
   bool get isReady => _isReady;
@@ -18,7 +21,19 @@ class StripeService extends ChangeNotifier {
   String? get error => _error;
 
   Future<void> init() async {
-    _isReady = _checkoutUrl.isNotEmpty;
+    final candidate = Uri.tryParse(_checkoutUrl);
+    if (candidate != null &&
+        candidate.scheme == 'https' &&
+        candidate.hasAuthority &&
+        candidate.host.isNotEmpty &&
+        candidate.userInfo.isEmpty &&
+        !candidate.hasFragment) {
+      _checkoutUri = candidate;
+      _isReady = true;
+    } else {
+      _checkoutUri = null;
+      _isReady = false;
+    }
     notifyListeners();
   }
 
@@ -29,9 +44,12 @@ class StripeService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final separator = _checkoutUrl.contains('?') ? '&' : '?';
-      final url = Uri.parse(
-        '$_checkoutUrl${separator}locale=${_settings.languageCode}',
+      final checkoutUri = _checkoutUri!;
+      final url = checkoutUri.replace(
+        queryParameters: {
+          ...checkoutUri.queryParameters,
+          'locale': _settings.languageCode,
+        },
       );
       final opened = await launchUrl(url, mode: LaunchMode.externalApplication);
       if (!opened) _error = 'Could not open secure checkout.';

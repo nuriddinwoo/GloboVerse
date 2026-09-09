@@ -9,6 +9,7 @@ import 'screens/onboarding/onboarding_screen.dart';
 import 'services/auth_service.dart';
 import 'services/billing_service.dart';
 import 'services/conversation_service.dart';
+import 'services/entitlement_reconciliation_service.dart';
 import 'services/online_service.dart';
 import 'services/session_service.dart';
 import 'services/settings_service.dart';
@@ -23,6 +24,7 @@ class GloboVerseApp extends StatelessWidget {
     required this.auth,
     required this.session,
     required this.billing,
+    required this.entitlementReconciliation,
     required this.translation,
     required this.conversation,
     required this.online,
@@ -34,6 +36,7 @@ class GloboVerseApp extends StatelessWidget {
   final AuthService auth;
   final SessionService session;
   final BillingService billing;
+  final EntitlementReconciliationService entitlementReconciliation;
   final TranslationService translation;
   final ConversationService conversation;
   final OnlineService online;
@@ -48,6 +51,7 @@ class GloboVerseApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: auth),
         ChangeNotifierProvider.value(value: session),
         ChangeNotifierProvider.value(value: billing),
+        ChangeNotifierProvider.value(value: entitlementReconciliation),
         ChangeNotifierProvider.value(value: translation),
         ChangeNotifierProvider.value(value: conversation),
         ChangeNotifierProvider.value(value: online),

@@ -180,10 +180,10 @@ class ProfileScreen extends StatelessWidget {
                   _SettingsTile(
                     icon: Icons.restore_rounded,
                     color: AppColors.success,
-                    title: billing.status == BillingStatus.loading
+                    title: billing.isRestoring
                         ? l10n.t('restoring')
                         : l10n.t('restorePurchases'),
-                    onTap: billing.isBusy ? null : billing.restorePurchases,
+                    onTap: billing.canRestore ? billing.restorePurchases : null,
                   ),
                 ],
               ),

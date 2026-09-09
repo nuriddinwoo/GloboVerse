@@ -46,6 +46,41 @@ void main() {
           isNot(contains('{count}')),
         );
         expect(state.t('presenceUnavailable'), isNot('presenceUnavailable'));
+        expect(state.t('loadingProducts'), isNot('loadingProducts'));
+        expect(
+          state.t('storeProductsUnavailable'),
+          isNot('storeProductsUnavailable'),
+        );
+        expect(
+          state.t('hourPassCapacityReached'),
+          isNot('hourPassCapacityReached'),
+        );
+        expect(
+          state.t('entitlementRefreshing'),
+          isNot('entitlementRefreshing'),
+        );
+        expect(
+          state.t('entitlementRefreshFailed'),
+          isNot('entitlementRefreshFailed'),
+        );
+        expect(state.t('retryEntitlements'), isNot('retryEntitlements'));
+        expect(state.t('purchaseVerifying'), isNot('purchaseVerifying'));
+        expect(
+          state.t('purchaseVerificationRequired'),
+          isNot('purchaseVerificationRequired'),
+        );
+        expect(
+          state.t('purchaseVerificationPending'),
+          isNot('purchaseVerificationPending'),
+        );
+        expect(
+          state.t('purchaseVerificationFailed'),
+          isNot('purchaseVerificationFailed'),
+        );
+        expect(
+          state.t('purchaseVerificationError'),
+          isNot('purchaseVerificationError'),
+        );
       }
       expect(previewTitles.toSet(), hasLength(codes.length));
       expect(editProfileLabels.toSet(), hasLength(codes.length));

@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../l10n/l10n_state.dart';
 import '../../services/billing_service.dart';
-import '../../services/stripe_service.dart';
+import '../../services/entitlement_reconciliation_service.dart';
 
 Future<void> showBillingSheet(BuildContext context) {
   return showModalBottomSheet<void>(
@@ -22,7 +22,7 @@ class BillingSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.watch<L10nState>();
     final billing = context.watch<BillingService>();
-    final stripe = context.watch<StripeService>();
+    final entitlementSync = context.watch<EntitlementReconciliationService?>();
 
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 680),
@@ -68,28 +68,66 @@ class BillingSheet extends StatelessWidget {
                 _OfferCard(
                   offer: offer,
                   featured: offer.kind == OfferKind.subscription,
-                  enabled: !billing.isBusy && offer.product != null,
+                  enabled: billing.canPurchaseOffer(offer),
                   onTap: () => billing.purchase(offer),
                 ),
                 const SizedBox(height: 12),
               ],
-              if (billing.status == BillingStatus.loading ||
-                  billing.status == BillingStatus.purchasing) ...[
+              if (billing.isHourPassCapacityReached) ...[
+                _StatusMessage(
+                  icon: Icons.timer_off_outlined,
+                  color: AppColors.amber,
+                  text: l10n.t('hourPassCapacityReached'),
+                ),
+              ],
+              if (billing.isBusy) ...[
                 const SizedBox(height: 4),
                 const LinearProgressIndicator(),
                 const SizedBox(height: 10),
                 Text(
                   billing.status == BillingStatus.purchasing
                       ? l10n.t('purchasePending')
-                      : l10n.t('restoring'),
+                      : billing.status == BillingStatus.verifying
+                      ? l10n.t('purchaseVerifying')
+                      : billing.isRestoring
+                      ? l10n.t('restoring')
+                      : l10n.t('loadingProducts'),
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
               if (billing.status == BillingStatus.success) ...[
                 _StatusMessage(
-                  icon: Icons.check_circle_rounded,
+                  icon: Icons.verified_rounded,
                   color: AppColors.success,
                   text: l10n.t('purchaseSuccess'),
+                ),
+              ],
+              if (billing.status == BillingStatus.verificationRequired) ...[
+                _StatusMessage(
+                  icon: Icons.gpp_maybe_outlined,
+                  color: AppColors.amber,
+                  text: l10n.t('purchaseVerificationRequired'),
+                ),
+              ],
+              if (billing.status == BillingStatus.verificationPending) ...[
+                _StatusMessage(
+                  icon: Icons.hourglass_top_rounded,
+                  color: AppColors.amber,
+                  text: l10n.t('purchaseVerificationPending'),
+                ),
+              ],
+              if (billing.status == BillingStatus.verificationFailed) ...[
+                _StatusMessage(
+                  icon: Icons.gpp_bad_outlined,
+                  color: AppColors.coral,
+                  text: l10n.t('purchaseVerificationFailed'),
+                ),
+              ],
+              if (billing.status == BillingStatus.verificationError) ...[
+                _StatusMessage(
+                  icon: Icons.cloud_off_outlined,
+                  color: AppColors.amber,
+                  text: l10n.t('purchaseVerificationError'),
                 ),
               ],
               if (billing.status == BillingStatus.error &&
@@ -100,6 +138,13 @@ class BillingSheet extends StatelessWidget {
                   text: billing.error!,
                 ),
               ],
+              if (billing.status == BillingStatus.productsUnavailable) ...[
+                _StatusMessage(
+                  icon: Icons.inventory_2_outlined,
+                  color: AppColors.amber,
+                  text: l10n.t('storeProductsUnavailable'),
+                ),
+              ],
               if (billing.status == BillingStatus.unavailable) ...[
                 _StatusMessage(
                   icon: Icons.storefront_outlined,
@@ -107,26 +152,36 @@ class BillingSheet extends StatelessWidget {
                   text: l10n.t('storeUnavailable'),
                 ),
               ],
-              if (stripe.isReady) ...[
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: stripe.isOpening ? null : stripe.openCheckout,
-                    icon: stripe.isOpening
-                        ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.lock_outline_rounded),
-                    label: Text(l10n.t('stripeCheckout')),
+              if (entitlementSync != null &&
+                  entitlementSync.status == EntitlementSyncStatus.syncing &&
+                  !billing.isBusy) ...[
+                _StatusMessage(
+                  icon: Icons.sync_rounded,
+                  color: AppColors.cyan,
+                  text: l10n.t('entitlementRefreshing'),
+                ),
+              ],
+              if (entitlementSync != null &&
+                  entitlementSync.status == EntitlementSyncStatus.error) ...[
+                _StatusMessage(
+                  icon: Icons.cloud_off_outlined,
+                  color: AppColors.amber,
+                  text: l10n.t('entitlementRefreshFailed'),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: entitlementSync.refresh,
+                    child: Text(l10n.t('retryEntitlements')),
                   ),
                 ),
               ],
               const SizedBox(height: 8),
               Center(
                 child: TextButton(
-                  onPressed: billing.isBusy ? null : billing.restorePurchases,
+                  onPressed: billing.canRestore
+                      ? billing.restorePurchases
+                      : null,
                   child: Text(l10n.t('restorePurchases')),
                 ),
               ),

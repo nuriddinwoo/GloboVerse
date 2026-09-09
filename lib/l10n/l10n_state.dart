@@ -179,12 +179,29 @@ const Map<String, Map<String, String>> _strings = {
     'choosePlanBody': 'Add an hour or unlock unlimited conversations.',
     'hourPass': 'One-hour pass',
     'hourPassBody': '60 minutes of connection time',
+    'hourPassCapacityReached':
+        'Use some saved connection time before buying another one-hour pass.',
     'monthlyVip': 'Monthly VIP',
     'monthlyVipBody': 'Unlimited time and a VIP badge',
     'bestValue': 'BEST VALUE',
     'storeUnavailable': 'The app store is not available on this device.',
+    'loadingProducts': 'Loading store products…',
+    'storeProductsUnavailable': 'Store products are not available right now.',
+    'entitlementRefreshing': 'Refreshing verified account access…',
+    'entitlementRefreshFailed':
+        'Current VIP status could not be refreshed. No new access was added; the app will retry.',
+    'retryEntitlements': 'Retry access check',
     'purchasePending': 'Waiting for purchase confirmation…',
-    'purchaseSuccess': 'Your time has been added.',
+    'purchaseVerifying': 'Verifying your purchase securely…',
+    'purchaseVerificationRequired':
+        'Secure purchase verification is not configured. No time or VIP access can be added.',
+    'purchaseVerificationPending':
+        'The server is still verifying this purchase. Access has not been added yet.',
+    'purchaseVerificationFailed':
+        'The verification server rejected this purchase. No time or VIP access was added. Contact support if you were charged.',
+    'purchaseVerificationError':
+        'Verification could not finish right now. The purchase was left unfinished and no access was added. Restore purchases to retry.',
+    'purchaseSuccess': 'Purchase verified. Your access is up to date.',
     'stripeCheckout': 'Pay securely on the web',
     'noResults': 'No languages found',
     'guest': 'Explorer',
@@ -317,12 +334,29 @@ const Map<String, Map<String, String>> _strings = {
     'choosePlanBody': 'Як соат илова кунед ё суҳбати бемаҳдудро кушоед.',
     'hourPass': 'Рухсатномаи яксоата',
     'hourPassBody': '60 дақиқа вақти муошират',
+    'hourPassCapacityReached':
+        'Пеш аз харидани рухсатномаи яксоатаи дигар, каме аз вақти захирашударо истифода баред.',
     'monthlyVip': 'VIP-и моҳона',
     'monthlyVipBody': 'Вақти бемаҳдуд ва нишони VIP',
     'bestValue': 'БЕҲТАРИН НАРХ',
     'storeUnavailable': 'Дӯкони барнома дар ин дастгоҳ дастрас нест.',
+    'loadingProducts': 'Маҳсулоти дӯкон бор мешавад…',
+    'storeProductsUnavailable': 'Ҳоло маҳсулоти дӯкон дастрас нест.',
+    'entitlementRefreshing': 'Дастрасии тасдиқшудаи ҳисоб нав мешавад…',
+    'entitlementRefreshFailed':
+        'Ҳолати ҷории VIP нав нашуд. Дастрасии нав илова нашуд; барнома боз кӯшиш мекунад.',
+    'retryEntitlements': 'Санҷиши дастрасиро такрор кунед',
     'purchasePending': 'Тасдиқи харид интизор аст…',
-    'purchaseSuccess': 'Вақти шумо илова шуд.',
+    'purchaseVerifying': 'Санҷиши бехатари харид…',
+    'purchaseVerificationRequired':
+        'Санҷиши серверии харид танзим нашудааст. Вақт ё дастрасии VIP илова намешавад.',
+    'purchaseVerificationPending':
+        'Сервер ҳанӯз харидро месанҷад. Дастрасӣ ҳоло илова нашудааст.',
+    'purchaseVerificationFailed':
+        'Сервери санҷиш ин харидро рад кард. Вақт ё VIP илова нашуд. Агар маблағ гирифта шуда бошад, бо дастгирӣ тамос гиред.',
+    'purchaseVerificationError':
+        'Санҷиш ҳоло анҷом нашуд. Харид нотамом мондааст ва дастрасӣ илова нашуд. Барои кӯшиши дигар харидҳоро барқарор кунед.',
+    'purchaseSuccess': 'Харид тасдиқ шуд. Дастрасии шумо нав аст.',
     'stripeCheckout': 'Пардохти бехатар дар веб',
     'noResults': 'Забон ёфт нашуд',
     'guest': 'Сайёҳ',
@@ -435,9 +469,30 @@ const Map<String, Map<String, String>> _strings = {
     'choosePlan': 'Продолжайте исследовать',
     'hourPass': 'Часовой пропуск',
     'hourPassBody': '60 минут общения',
+    'hourPassCapacityReached':
+        'Используйте часть сохранённого времени, прежде чем покупать ещё один часовой пропуск.',
     'monthlyVip': 'VIP на месяц',
     'monthlyVipBody': 'Безлимитное время и значок VIP',
     'bestValue': 'ВЫГОДНО',
+    'storeUnavailable': 'Магазин приложений недоступен на этом устройстве.',
+    'loadingProducts': 'Загружаем товары магазина…',
+    'storeProductsUnavailable': 'Товары магазина сейчас недоступны.',
+    'entitlementRefreshing': 'Обновляем подтверждённый доступ аккаунта…',
+    'entitlementRefreshFailed':
+        'Не удалось обновить текущий статус VIP. Новый доступ не добавлен; приложение повторит попытку.',
+    'retryEntitlements': 'Повторить проверку доступа',
+    'purchasePending': 'Ожидаем подтверждения покупки…',
+    'purchaseVerifying': 'Безопасно проверяем покупку…',
+    'purchaseVerificationRequired':
+        'Серверная проверка покупок не настроена. Время или VIP-доступ нельзя добавить.',
+    'purchaseVerificationPending':
+        'Сервер всё ещё проверяет покупку. Доступ пока не добавлен.',
+    'purchaseVerificationFailed':
+        'Сервер проверки отклонил покупку. Время или VIP-доступ не добавлены. Если списали деньги, обратитесь в поддержку.',
+    'purchaseVerificationError':
+        'Проверку сейчас завершить не удалось. Покупка оставлена незавершённой, доступ не добавлен. Восстановите покупки для повтора.',
+    'purchaseSuccess': 'Покупка подтверждена. Ваш доступ обновлён.',
+    'stripeCheckout': 'Безопасная оплата в интернете',
     'noResults': 'Языки не найдены',
     'guest': 'Исследователь',
   },
@@ -550,9 +605,30 @@ const Map<String, Map<String, String>> _strings = {
     'choosePlan': 'Sayohatni davom ettiring',
     'hourPass': 'Bir soatlik ruxsat',
     'hourPassBody': '60 daqiqa muloqot vaqti',
+    'hourPassCapacityReached':
+        'Yana bir soatlik ruxsat xarid qilishdan oldin saqlangan vaqtning bir qismini ishlating.',
     'monthlyVip': 'Oylik VIP',
     'monthlyVipBody': 'Cheksiz vaqt va VIP belgisi',
     'bestValue': 'ENG MAQBUL',
+    'storeUnavailable': 'Ilovalar do‘koni bu qurilmada mavjud emas.',
+    'loadingProducts': 'Do‘kon mahsulotlari yuklanmoqda…',
+    'storeProductsUnavailable': 'Do‘kon mahsulotlari hozir mavjud emas.',
+    'entitlementRefreshing': 'Tasdiqlangan hisob ruxsati yangilanmoqda…',
+    'entitlementRefreshFailed':
+        'Joriy VIP holatini yangilab bo‘lmadi. Yangi ruxsat qo‘shilmadi; ilova qayta urinadi.',
+    'retryEntitlements': 'Ruxsatni qayta tekshirish',
+    'purchasePending': 'Xarid tasdig‘i kutilmoqda…',
+    'purchaseVerifying': 'Xarid xavfsiz tekshirilmoqda…',
+    'purchaseVerificationRequired':
+        'Xaridni serverda tekshirish sozlanmagan. Vaqt yoki VIP ruxsati qo‘shilmaydi.',
+    'purchaseVerificationPending':
+        'Server xaridni hali tekshirmoqda. Ruxsat hozircha qo‘shilmadi.',
+    'purchaseVerificationFailed':
+        'Tekshiruv serveri bu xaridni rad etdi. Vaqt yoki VIP qo‘shilmadi. Pul yechilgan bo‘lsa, yordam xizmatiga murojaat qiling.',
+    'purchaseVerificationError':
+        'Tekshiruvni hozir yakunlab bo‘lmadi. Xarid yakunlanmagan holda qoldi va ruxsat qo‘shilmadi. Qayta urinish uchun xaridlarni tiklang.',
+    'purchaseSuccess': 'Xarid tasdiqlandi. Ruxsatingiz yangilandi.',
+    'stripeCheckout': 'Internetda xavfsiz to‘lash',
     'noResults': 'Til topilmadi',
     'guest': 'Sayohatchi',
   },

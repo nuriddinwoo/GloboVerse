@@ -12,6 +12,8 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
   }
 
+  static const _maximumRemainingSeconds = 99 * 60 * 60;
+
   final SettingsService _settings;
   final DateTime Function() _now;
   Duration _remaining;
@@ -26,15 +28,12 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
   bool get canStart => isVip || _remaining.inSeconds > 0;
 
   static int _settingsSafeSeconds(SettingsService settings) {
-    return settings.remainingSeconds.clamp(
-      0,
-      const Duration(hours: 99).inSeconds,
-    );
+    return settings.remainingSeconds.clamp(0, _maximumRemainingSeconds);
   }
 
   void refreshVip() {
     final expired = _settings.vipUntil?.isBefore(_now()) ?? false;
-    if (expired) unawaited(_settings.setVipUntil(null));
+    if (expired) unawaited(_settings.clearExpiredVip(_now()));
     notifyListeners();
   }
 
@@ -46,7 +45,10 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
       final elapsed = now.difference(lastUpdate);
       if (!elapsed.isNegative) {
         _remaining = Duration(
-          seconds: (_remaining.inSeconds - elapsed.inSeconds).clamp(0, 359999),
+          seconds: (_remaining.inSeconds - elapsed.inSeconds).clamp(
+            0,
+            _maximumRemainingSeconds,
+          ),
         );
       }
     }
@@ -79,22 +81,10 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  void extendBy(Duration duration) {
-    if (duration.isNegative || duration == Duration.zero) return;
-    _remaining = Duration(
-      seconds: (_remaining.inSeconds + duration.inSeconds).clamp(0, 359999),
-    );
-    unawaited(_settings.setRemainingSeconds(_remaining.inSeconds));
-    notifyListeners();
-  }
-
-  Future<void> grantVip(Duration duration) async {
-    final now = _now();
-    final currentExpiry = _settings.vipUntil;
-    final startsAt = currentExpiry != null && currentExpiry.isAfter(now)
-        ? currentExpiry
-        : now;
-    await _settings.setVipUntil(startsAt.add(duration));
+  void syncVerifiedEntitlements() {
+    _remaining = Duration(seconds: _settingsSafeSeconds(_settings));
+    final expired = _settings.vipUntil?.isBefore(_now()) ?? false;
+    if (expired) unawaited(_settings.clearExpiredVip(_now()));
     notifyListeners();
   }
 
@@ -115,7 +105,10 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
       final elapsed = now.difference(_lastTick).inSeconds;
       if (elapsed > 0) {
         _remaining = Duration(
-          seconds: (_remaining.inSeconds - elapsed).clamp(0, 359999),
+          seconds: (_remaining.inSeconds - elapsed).clamp(
+            0,
+            _maximumRemainingSeconds,
+          ),
         );
       }
       if (_remaining == Duration.zero) {
@@ -129,7 +122,7 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> _saveState() async {
     final now = _now();
-    await _settings.setRemainingSeconds(_remaining.inSeconds);
+    await _settings.persistRemainingAfterUsage(_remaining.inSeconds);
     await _settings.setSessionState(active: _isActive, updatedAt: now);
   }
 

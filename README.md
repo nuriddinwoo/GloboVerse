@@ -17,15 +17,16 @@ GloboVerse is a dark, mobile-first Flutter experience for discovering people and
 - Clearly disclosed sample discovery catalog until a valid remote catalog loads
 - Interactive translated conversations with live polling, read receipts, delivery retry, and reporting
 - Clearly disclosed on-device `GloboGuide` preview when no conversation API is configured
-- Persisted connection timer, one-hour passes, and VIP entitlement state
-- App Store / Google Play billing integration points and optional Stripe web checkout
+- Persisted connection timer plus journaled, server-verified one-hour and VIP grants
+- Revisioned startup/foreground VIP reconciliation, including authoritative expiry and revocation
+- Fail-closed App Store / Google Play billing with a configurable authenticated verification boundary
 - Connectivity state, dark Material 3 design system, branded native/PWA icons
 - Android, iOS, and web runners
 - Unit tests and documented quality checks
 
 ## Run locally
 
-Requirements: Flutter 3.47 or newer and Dart 3.5 or newer.
+Requirements: Flutter 3.47 or newer and Dart 3.10 or newer.
 
 ```bash
 flutter pub get
@@ -50,8 +51,8 @@ flutter run \
   --dart-define=TRANSLATION_API_KEY=public-or-short-lived-token \
   --dart-define=GLOBOVERSE_DISCOVERY_API_URL=https://api.example.com/v1 \
   --dart-define=GLOBOVERSE_CHAT_API_URL=https://api.example.com/v1 \
-  --dart-define=GLOBOVERSE_API_TOKEN=short-lived-access-token \
-  --dart-define=STRIPE_CHECKOUT_URL=https://example.com/checkout
+  --dart-define=GLOBOVERSE_BILLING_API_URL=https://api.example.com/v1 \
+  --dart-define=GLOBOVERSE_API_TOKEN=short-lived-access-token
 ```
 
 The translation endpoint receives:
@@ -69,7 +70,7 @@ It should return either `{ "translatedText": "Салом" }` or `{ "data": { "tr
 
 When `GLOBOVERSE_DISCOVERY_API_URL` is set, the app fetches bounded room, member, online-count, and per-member presence data from `GET /discovery` using the contract in [docs/discovery_api.md](docs/discovery_api.md). While online and in the foreground it refreshes once per minute, uses ETags when available, backs off after failures, and refreshes immediately after resume/reconnect; pull-to-refresh remains available. Updates are atomic, so an invalid or failed response retains the last valid catalog. Until one loads—or when the define is omitted—the interface clearly marks bundled rooms and profiles as samples. Sample room/member IDs are never sent to a configured chat backend.
 
-When `GLOBOVERSE_CHAT_API_URL` is omitted, conversations use a clearly labeled, on-device `GloboGuide` preview. No discovered member is impersonated and no chat message leaves the device. When it is set, the app uses the cursor-based REST contract in [docs/conversation_api.md](docs/conversation_api.md), polling only while online and in the foreground. `GLOBOVERSE_API_TOKEN` is optional and sent as a bearer token.
+When `GLOBOVERSE_CHAT_API_URL` is omitted, conversations use a clearly labeled, on-device `GloboGuide` preview. No discovered member is impersonated and no chat message leaves the device. When it is set, the app uses the cursor-based REST contract in [docs/conversation_api.md](docs/conversation_api.md), polling only while online and in the foreground. `GLOBOVERSE_API_TOKEN` is optional for the previewable discovery/chat adapters but required by the billing verifier and entitlement snapshot client.
 
 `--dart-define` is not a secret store: its values are compiled into the app. Production builds should obtain short-lived user credentials through a trusted authentication flow rather than embedding long-lived API credentials.
 
@@ -82,11 +83,11 @@ Create matching products in App Store Connect and Google Play Console:
 | `globoverse_hour_pass` | Consumable | 60 connection minutes |
 | `globoverse_vip_monthly` | Subscription | 30 days of unlimited time |
 
-The app starts listening to the purchase stream before querying products and completes pending purchases. The current local ledger prevents duplicate delivery during development.
+The app listens to the purchase stream before querying products, but it enables buying and restoration only when `GLOBOVERSE_BILLING_API_URL` identifies a valid HTTPS backend and `GLOBOVERSE_API_TOKEN` supplies a bounded short-lived user credential. It forwards only bounded store server-verification data and untrusted metadata; the backend must verify the receipt with Apple or Google and return an exact, stable grant plus a revisioned account snapshot. A purchase callback, product ID, client transaction ID, or local verification field can never grant time or VIP by itself.
 
-> **Production requirement:** verify App Store and Google Play receipts on a trusted backend before granting time or VIP access. Never trust client-only purchase verification for a production entitlement.
+Verified grants use a crash-recoverable journal and stable server verification IDs, so duplicate store delivery cannot add an hour twice. Android consumables are consumed only after a verified or definitively rejected response. Transient and pending checks remain unfinished for retry. An authenticated snapshot is reconciled at startup, after restore, on foreground resume, and periodically; only newer revisions can replace VIP state, including clearing revoked access. See the full request/response, idempotency, migration, and backend validation contract in [docs/billing_api.md](docs/billing_api.md).
 
-Stripe checkout is opened only when `STRIPE_CHECKOUT_URL` is defined. Secret Stripe keys belong on the checkout backend, never in this Flutter app.
+The old client-trusting purchase ledger is invalidated by a one-time migration. Hosted Stripe checkout is not surfaced yet: the client can reconcile webhook-authored snapshots, but checkout stays disabled until the deployed backend verifies Stripe webhooks and transactionally updates account revisions. `StripeService` remains only a future HTTPS launcher adapter. Secret Stripe keys and webhook secrets belong on the backend, never in this Flutter app.
 
 ## Project structure
 
@@ -109,4 +110,4 @@ flutter analyze --fatal-infos
 flutter test
 ```
 
-Persistent settings are convenience data backed by `shared_preferences`; they are not used for passwords or other secrets.
+Persistent settings are convenience data backed by `shared_preferences`; they are not used for passwords, receipts, tokens, or other secrets. The verified-grant journal prevents local replay but does not replace the backend’s authoritative transaction records.

@@ -7,6 +7,7 @@ import 'l10n/l10n_state.dart';
 import 'services/auth_service.dart';
 import 'services/billing_service.dart';
 import 'services/conversation_service.dart';
+import 'services/entitlement_reconciliation_service.dart';
 import 'services/online_service.dart';
 import 'services/session_service.dart';
 import 'services/settings_service.dart';
@@ -29,7 +30,10 @@ Future<void> main() async {
     ..refreshVip()
     ..resume();
   final billing = BillingService(settings)
-    ..onHourPassGranted = () => session.extendBy(const Duration(hours: 1));
+    ..onEntitlementsChanged = session.syncVerifiedEntitlements;
+  final entitlementReconciliation = EntitlementReconciliationService(settings)
+    ..onEntitlementsChanged = session.syncVerifiedEntitlements;
+  billing.onReconciliationRequested = entitlementReconciliation.refresh;
   final translation = TranslationService();
   final online = OnlineService();
   final conversation = ConversationService(translation, online);
@@ -38,6 +42,7 @@ Future<void> main() async {
   // These services report readiness through ChangeNotifier, so startup remains
   // instant even when a store or network provider is slow.
   unawaited(billing.init());
+  unawaited(entitlementReconciliation.start());
   unawaited(translation.init());
   unawaited(online.connect());
   unawaited(stripe.init());
@@ -49,6 +54,7 @@ Future<void> main() async {
       auth: auth,
       session: session,
       billing: billing,
+      entitlementReconciliation: entitlementReconciliation,
       translation: translation,
       conversation: conversation,
       online: online,
