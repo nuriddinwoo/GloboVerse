@@ -6,6 +6,7 @@ import 'app.dart';
 import 'l10n/l10n_state.dart';
 import 'services/auth_service.dart';
 import 'services/billing_service.dart';
+import 'services/conversation_service.dart';
 import 'services/online_service.dart';
 import 'services/session_service.dart';
 import 'services/settings_service.dart';
@@ -31,6 +32,7 @@ Future<void> main() async {
     ..onHourPassGranted = () => session.extendBy(const Duration(hours: 1));
   final translation = TranslationService();
   final online = OnlineService();
+  final conversation = ConversationService(translation, online);
   final stripe = StripeService(settings);
 
   // These services report readiness through ChangeNotifier, so startup remains
@@ -48,6 +50,7 @@ Future<void> main() async {
       session: session,
       billing: billing,
       translation: translation,
+      conversation: conversation,
       online: online,
       stripe: stripe,
     ),

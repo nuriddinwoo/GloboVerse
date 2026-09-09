@@ -34,6 +34,31 @@ class TranslationService extends ChangeNotifier {
     notifyListeners();
   }
 
+  TranslationResult? translateOffline({
+    required String text,
+    required String sourceLanguage,
+    required String targetLanguage,
+  }) {
+    final cleanText = text.trim();
+    if (cleanText.isEmpty) return null;
+    if (sourceLanguage == targetLanguage) {
+      return TranslationResult(
+        text: cleanText,
+        sourceLanguage: sourceLanguage,
+        isOfflinePreview: true,
+      );
+    }
+    return TranslationResult(
+      text: _offlineTranslation(
+        cleanText,
+        sourceLanguage: sourceLanguage,
+        targetLanguage: targetLanguage,
+      ),
+      sourceLanguage: sourceLanguage == 'auto' ? 'en' : sourceLanguage,
+      isOfflinePreview: true,
+    );
+  }
+
   Future<TranslationResult?> translate({
     required String text,
     required String sourceLanguage,
@@ -62,10 +87,10 @@ class TranslationService extends ChangeNotifier {
         );
       }
 
-      return TranslationResult(
-        text: _offlineTranslation(cleanText, targetLanguage),
-        sourceLanguage: sourceLanguage == 'auto' ? 'en' : sourceLanguage,
-        isOfflinePreview: true,
+      return translateOffline(
+        text: cleanText,
+        sourceLanguage: sourceLanguage,
+        targetLanguage: targetLanguage,
       );
     } catch (_) {
       _error = 'Translation request failed.';
@@ -122,17 +147,48 @@ class TranslationService extends ChangeNotifier {
     );
   }
 
-  String _offlineTranslation(String text, String targetLanguage) {
-    final normalized = text.toLowerCase().trim().replaceAll(
-      RegExp(r'[.!?]+$'),
-      '',
-    );
-    final exact = _offlinePhrases[normalized]?[targetLanguage];
-    if (exact != null) return exact;
+  String _offlineTranslation(
+    String text, {
+    required String sourceLanguage,
+    required String targetLanguage,
+  }) {
+    final normalized = _normalizePhrase(text);
+    final normalizedSource = sourceLanguage
+        .toLowerCase()
+        .split(RegExp('[-_]'))
+        .first;
+    final normalizedTarget = targetLanguage
+        .toLowerCase()
+        .split(RegExp('[-_]'))
+        .first;
+
+    if (normalizedSource == 'auto' || normalizedSource == 'en') {
+      final exact = _offlinePhrases[normalized]?[normalizedTarget];
+      if (exact != null) return exact;
+    } else {
+      for (final phrase in _offlinePhrases.entries) {
+        final sourceText = phrase.value[normalizedSource];
+        if (sourceText == null || _normalizePhrase(sourceText) != normalized) {
+          continue;
+        }
+        if (normalizedTarget == 'en') {
+          return _offlineEnglishDisplay[phrase.key] ?? phrase.key;
+        }
+        return phrase.value[normalizedTarget] ?? text;
+      }
+    }
 
     // Never pretend arbitrary text was translated. In unconfigured builds the
     // original stays visible and is explicitly marked as an offline preview.
     return text;
+  }
+
+  String _normalizePhrase(String value) {
+    return value
+        .toLowerCase()
+        .trim()
+        .replaceAll(RegExp(r'[.!?؟？。！]+$'), '')
+        .trim();
   }
 
   @override
@@ -141,6 +197,15 @@ class TranslationService extends ChangeNotifier {
     super.dispose();
   }
 }
+
+const _offlineEnglishDisplay = <String, String>{
+  'hello': 'Hello',
+  'how are you': 'How are you?',
+  'thank you': 'Thank you',
+  'nice to meet you': 'Nice to meet you',
+  'have a nice day': 'Have a nice day',
+  'i am from globoverse': 'I am from GloboVerse',
+};
 
 const _offlinePhrases = <String, Map<String, String>>{
   'hello': {
@@ -190,5 +255,29 @@ const _offlinePhrases = <String, Map<String, String>>{
     'fa': 'از آشنایی با شما خوشحالم',
     'ja': 'はじめまして',
     'zh': '很高兴认识你',
+  },
+  'have a nice day': {
+    'tg': 'Рӯзи хуб дошта бошед',
+    'ru': 'Хорошего дня',
+    'uz': 'Kuningiz xayrli o‘tsin',
+    'es': 'Que tengas un buen día',
+    'fr': 'Bonne journée',
+    'de': 'Einen schönen Tag noch',
+    'ar': 'أتمنى لك يوماً سعيداً',
+    'fa': 'روز خوبی داشته باشید',
+    'ja': '良い一日を',
+    'zh': '祝你今天愉快',
+  },
+  'i am from globoverse': {
+    'tg': 'Ман аз GloboVerse ҳастам',
+    'ru': 'Я из GloboVerse',
+    'uz': 'Men GloboVerse’danman',
+    'es': 'Soy de GloboVerse',
+    'fr': 'Je viens de GloboVerse',
+    'de': 'Ich komme aus GloboVerse',
+    'ar': 'أنا من GloboVerse',
+    'fa': 'من از GloboVerse هستم',
+    'ja': 'GloboVerseから来ました',
+    'zh': '我来自GloboVerse',
   },
 };

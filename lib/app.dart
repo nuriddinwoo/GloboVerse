@@ -8,6 +8,7 @@ import 'screens/home/home_shell.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'services/auth_service.dart';
 import 'services/billing_service.dart';
+import 'services/conversation_service.dart';
 import 'services/online_service.dart';
 import 'services/session_service.dart';
 import 'services/settings_service.dart';
@@ -23,6 +24,7 @@ class GloboVerseApp extends StatelessWidget {
     required this.session,
     required this.billing,
     required this.translation,
+    required this.conversation,
     required this.online,
     required this.stripe,
   });
@@ -33,6 +35,7 @@ class GloboVerseApp extends StatelessWidget {
   final SessionService session;
   final BillingService billing;
   final TranslationService translation;
+  final ConversationService conversation;
   final OnlineService online;
   final StripeService stripe;
 
@@ -46,6 +49,7 @@ class GloboVerseApp extends StatelessWidget {
         ChangeNotifierProvider.value(value: session),
         ChangeNotifierProvider.value(value: billing),
         ChangeNotifierProvider.value(value: translation),
+        ChangeNotifierProvider.value(value: conversation),
         ChangeNotifierProvider.value(value: online),
         ChangeNotifierProvider.value(value: stripe),
       ],

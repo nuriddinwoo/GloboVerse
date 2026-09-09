@@ -5,21 +5,24 @@ import 'package:flutter/widgets.dart';
 import 'settings_service.dart';
 
 class SessionService extends ChangeNotifier with WidgetsBindingObserver {
-  SessionService(this._settings)
-    : _remaining = Duration(seconds: _settingsSafeSeconds(_settings)) {
+  SessionService(this._settings, {DateTime Function()? now})
+    : _now = now ?? DateTime.now,
+      _remaining = Duration(seconds: _settingsSafeSeconds(_settings)) {
+    _lastTick = _now();
     WidgetsBinding.instance.addObserver(this);
   }
 
   final SettingsService _settings;
+  final DateTime Function() _now;
   Duration _remaining;
   Timer? _timer;
-  DateTime _lastTick = DateTime.now();
+  late DateTime _lastTick;
   int _ticksSinceSave = 0;
   bool _isActive = false;
 
   Duration get remaining => _remaining;
   bool get isActive => _isActive;
-  bool get isVip => _settings.vipUntil?.isAfter(DateTime.now()) ?? false;
+  bool get isVip => _settings.vipUntil?.isAfter(_now()) ?? false;
   bool get canStart => isVip || _remaining.inSeconds > 0;
 
   static int _settingsSafeSeconds(SettingsService settings) {
@@ -30,14 +33,14 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void refreshVip() {
-    final expired = _settings.vipUntil?.isBefore(DateTime.now()) ?? false;
+    final expired = _settings.vipUntil?.isBefore(_now()) ?? false;
     if (expired) unawaited(_settings.setVipUntil(null));
     notifyListeners();
   }
 
   void resume() {
     if (!_settings.sessionWasActive) return;
-    final now = DateTime.now();
+    final now = _now();
     final lastUpdate = _settings.sessionUpdatedAt;
     if (!isVip && lastUpdate != null) {
       final elapsed = now.difference(lastUpdate);
@@ -59,7 +62,7 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
       return false;
     }
     _isActive = true;
-    _lastTick = DateTime.now();
+    _lastTick = _now();
     _timer ??= Timer.periodic(const Duration(seconds: 1), (_) => _onTick());
     unawaited(_saveState());
     notifyListeners();
@@ -86,7 +89,7 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> grantVip(Duration duration) async {
-    final now = DateTime.now();
+    final now = _now();
     final currentExpiry = _settings.vipUntil;
     final startsAt = currentExpiry != null && currentExpiry.isAfter(now)
         ? currentExpiry
@@ -107,7 +110,7 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _applyElapsed() {
-    final now = DateTime.now();
+    final now = _now();
     if (!isVip) {
       final elapsed = now.difference(_lastTick).inSeconds;
       if (elapsed > 0) {
@@ -125,7 +128,7 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> _saveState() async {
-    final now = DateTime.now();
+    final now = _now();
     await _settings.setRemainingSeconds(_remaining.inSeconds);
     await _settings.setSessionState(active: _isActive, updatedAt: now);
   }

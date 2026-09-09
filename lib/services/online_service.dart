@@ -25,6 +25,7 @@ class CommunityRoom {
 
 class WorldMember {
   const WorldMember({
+    required this.id,
     required this.name,
     required this.city,
     required this.country,
@@ -33,6 +34,7 @@ class WorldMember {
     this.isVip = false,
   });
 
+  final String id;
   final String name;
   final String city;
   final String country;
@@ -93,6 +95,7 @@ class OnlineService extends ChangeNotifier {
 
   List<WorldMember> get members => const [
     WorldMember(
+      id: 'amina-dushanbe',
       name: 'Amina',
       city: 'Dushanbe',
       country: 'Tajikistan',
@@ -101,6 +104,7 @@ class OnlineService extends ChangeNotifier {
       isVip: true,
     ),
     WorldMember(
+      id: 'sofia-barcelona',
       name: 'Sofia',
       city: 'Barcelona',
       country: 'Spain',
@@ -108,6 +112,7 @@ class OnlineService extends ChangeNotifier {
       avatarSeed: 1,
     ),
     WorldMember(
+      id: 'haruto-kyoto',
       name: 'Haruto',
       city: 'Kyoto',
       country: 'Japan',
@@ -115,6 +120,7 @@ class OnlineService extends ChangeNotifier {
       avatarSeed: 2,
     ),
     WorldMember(
+      id: 'malik-casablanca',
       name: 'Malik',
       city: 'Casablanca',
       country: 'Morocco',
@@ -122,6 +128,7 @@ class OnlineService extends ChangeNotifier {
       avatarSeed: 3,
     ),
     WorldMember(
+      id: 'zarina-samarkand',
       name: 'Zarina',
       city: 'Samarkand',
       country: 'Uzbekistan',

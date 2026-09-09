@@ -5,7 +5,7 @@
 <h1 align="center">GloboVerse</h1>
 <p align="center"><strong>One world. Every voice.</strong></p>
 
-GloboVerse is a dark, mobile-first Flutter experience for discovering people and community rooms across cultures, translating phrases, and managing timed or VIP conversations.
+GloboVerse is a dark, mobile-first Flutter experience for discovering people and community rooms across cultures, translating phrases, and holding timed or VIP conversations.
 
 ## What is included
 
@@ -13,12 +13,14 @@ GloboVerse is a dark, mobile-first Flutter experience for discovering people and
 - 184-language ISO catalog with safe Flutter locale fallback
 - Bundled English, Tajik, Russian, and Uzbek interface copy
 - Translation workspace with an optional remote provider and honest offline phrase preview
-- Discover feed, community rooms, people cards, and a live-session experience
+- Discover feed, community rooms, and people cards
+- Interactive translated text conversations with starter prompts, delivery retry, and reporting
+- Clearly disclosed on-device `GloboGuide` preview when no conversation API is configured
 - Persisted connection timer, one-hour passes, and VIP entitlement state
 - App Store / Google Play billing integration points and optional Stripe web checkout
 - Connectivity state, dark Material 3 design system, branded native/PWA icons
 - Android, iOS, and web runners
-- Unit tests and GitHub Actions quality checks
+- Unit tests and documented quality checks
 
 ## Run locally
 
@@ -39,12 +41,14 @@ flutter run -d ios
 
 ## Optional runtime configuration
 
-Secrets are never embedded in source. Supply public endpoints with `--dart-define`:
+Do not commit credentials. Supply optional build-time configuration with `--dart-define`:
 
 ```bash
 flutter run \
   --dart-define=TRANSLATION_API_URL=https://api.example.com/translate \
   --dart-define=TRANSLATION_API_KEY=public-or-short-lived-token \
+  --dart-define=GLOBOVERSE_CHAT_API_URL=https://api.example.com/v1 \
+  --dart-define=GLOBOVERSE_API_TOKEN=short-lived-access-token \
   --dart-define=STRIPE_CHECKOUT_URL=https://example.com/checkout
 ```
 
@@ -60,6 +64,10 @@ The translation endpoint receives:
 ```
 
 It should return either `{ "translatedText": "Салом" }` or `{ "data": { "translatedText": "Салом" } }`. A detected source can be returned as `detectedLanguage`.
+
+When `GLOBOVERSE_CHAT_API_URL` is omitted, conversations use a clearly labeled, on-device `GloboGuide` preview. No discovered member is impersonated and no chat message leaves the device. When it is set, the app uses the REST contract in [docs/conversation_api.md](docs/conversation_api.md). `GLOBOVERSE_API_TOKEN` is optional and sent as a bearer token.
+
+`--dart-define` is not a secret store: its values are compiled into the app. Production builds should obtain short-lived user credentials through a trusted authentication flow rather than embedding long-lived API credentials.
 
 ## Billing setup
 
@@ -82,8 +90,9 @@ Stripe checkout is opened only when `STRIPE_CHECKOUT_URL` is defined. Secret Str
 lib/
 ├── core/               # Theme, formatters, and shared widgets
 ├── l10n/               # App language state and 184-language catalog
+├── models/             # Serializable conversation domain models
 ├── screens/            # Onboarding, home, translate, connect, profile
-├── services/           # Auth, settings, session, billing, network, translation
+├── services/           # Auth, settings, sessions, chat, billing, network, translation
 ├── app.dart             # Providers, MaterialApp, auth gate
 └── main.dart            # Service initialization
 ```

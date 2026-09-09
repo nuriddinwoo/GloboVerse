@@ -17,6 +17,21 @@ void main() {
     service.dispose();
   });
 
+  test('offline phrases translate back to English', () async {
+    final service = TranslationService();
+    await service.init();
+
+    final result = await service.translate(
+      text: 'Шумо чӣ хелед?',
+      sourceLanguage: 'tg',
+      targetLanguage: 'en',
+    );
+
+    expect(result?.text, 'How are you?');
+    expect(result?.isOfflinePreview, isTrue);
+    service.dispose();
+  });
+
   test(
     'unknown offline text stays visible instead of faking a translation',
     () async {
