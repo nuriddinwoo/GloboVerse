@@ -27,9 +27,9 @@ class BrandMark extends StatelessWidget {
         Text(
           'GloboVerse',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
-              ),
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
+          ),
         ),
       ],
     );
@@ -54,14 +54,26 @@ class _GlobePainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     canvas.drawOval(
-      Rect.fromCenter(center: center, width: radius * 1.02, height: radius * 1.72),
+      Rect.fromCenter(
+        center: center,
+        width: radius * 1.02,
+        height: radius * 1.72,
+      ),
       line,
     );
     canvas.drawOval(
-      Rect.fromCenter(center: center, width: radius * 1.7, height: radius * 0.76),
+      Rect.fromCenter(
+        center: center,
+        width: radius * 1.7,
+        height: radius * 0.76,
+      ),
       line,
     );
-    canvas.drawCircle(center, radius * 0.76, line..color = Colors.white.withValues(alpha: 0.22));
+    canvas.drawCircle(
+      center,
+      radius * 0.76,
+      line..color = Colors.white.withValues(alpha: 0.22),
+    );
 
     final orbit = Paint()
       ..color = AppColors.amber

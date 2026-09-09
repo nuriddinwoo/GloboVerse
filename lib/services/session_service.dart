@@ -6,7 +6,7 @@ import 'settings_service.dart';
 
 class SessionService extends ChangeNotifier with WidgetsBindingObserver {
   SessionService(this._settings)
-      : _remaining = Duration(seconds: _settingsSafeSeconds(_settings)) {
+    : _remaining = Duration(seconds: _settingsSafeSeconds(_settings)) {
     WidgetsBinding.instance.addObserver(this);
   }
 
@@ -23,7 +23,10 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
   bool get canStart => isVip || _remaining.inSeconds > 0;
 
   static int _settingsSafeSeconds(SettingsService settings) {
-    return settings.remainingSeconds.clamp(0, const Duration(hours: 99).inSeconds);
+    return settings.remainingSeconds.clamp(
+      0,
+      const Duration(hours: 99).inSeconds,
+    );
   }
 
   void refreshVip() {

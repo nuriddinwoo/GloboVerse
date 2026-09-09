@@ -72,10 +72,10 @@ class _TranslateScreenState extends State<TranslateScreen> {
   Future<void> _translate() async {
     FocusScope.of(context).unfocus();
     final result = await context.read<TranslationService>().translate(
-          text: _inputController.text,
-          sourceLanguage: _sourceCode,
-          targetLanguage: _targetCode,
-        );
+      text: _inputController.text,
+      sourceLanguage: _sourceCode,
+      targetLanguage: _targetCode,
+    );
     if (mounted && result != null) setState(() => _result = result);
   }
 
@@ -112,7 +112,10 @@ class _TranslateScreenState extends State<TranslateScreen> {
                       color: AppColors.cyan.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(Icons.translate_rounded, color: AppColors.cyan),
+                    child: const Icon(
+                      Icons.translate_rounded,
+                      color: AppColors.cyan,
+                    ),
                   ),
                   const SizedBox(width: 13),
                   Expanded(
@@ -122,16 +125,22 @@ class _TranslateScreenState extends State<TranslateScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
-                      color: (translation.hasRemoteProvider
-                              ? AppColors.success
-                              : AppColors.amber)
-                          .withValues(alpha: 0.1),
+                      color:
+                          (translation.hasRemoteProvider
+                                  ? AppColors.success
+                                  : AppColors.amber)
+                              .withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      translation.hasRemoteProvider ? l10n.t('online') : l10n.t('offlinePreview'),
+                      translation.hasRemoteProvider
+                          ? l10n.t('online')
+                          : l10n.t('offlinePreview'),
                       style: TextStyle(
                         color: translation.hasRemoteProvider
                             ? AppColors.success
@@ -144,13 +153,16 @@ class _TranslateScreenState extends State<TranslateScreen> {
                 ],
               ),
               const SizedBox(height: 30),
-              Text(l10n.t('translationTitle'), style: Theme.of(context).textTheme.displaySmall),
+              Text(
+                l10n.t('translationTitle'),
+                style: Theme.of(context).textTheme.displaySmall,
+              ),
               const SizedBox(height: 10),
               Text(
                 l10n.t('translationBody'),
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: AppColors.textMuted,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: AppColors.textMuted),
               ),
               const SizedBox(height: 26),
               Row(
@@ -161,7 +173,9 @@ class _TranslateScreenState extends State<TranslateScreen> {
                       label: _sourceCode == 'auto'
                           ? l10n.t('autoDetect')
                           : languageByCode(_sourceCode).nativeName,
-                      code: _sourceCode == 'auto' ? 'AI' : _sourceCode.toUpperCase(),
+                      code: _sourceCode == 'auto'
+                          ? 'AI'
+                          : _sourceCode.toUpperCase(),
                       onTap: _pickSource,
                     ),
                   ),
@@ -215,7 +229,9 @@ class _TranslateScreenState extends State<TranslateScreen> {
                         children: [
                           Text(
                             '${_inputController.text.characters.length} / 1500',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 11),
+                            style: Theme.of(
+                              context,
+                            ).textTheme.bodyMedium?.copyWith(fontSize: 11),
                           ),
                           const Spacer(),
                           if (_inputController.text.isNotEmpty)
@@ -228,16 +244,22 @@ class _TranslateScreenState extends State<TranslateScreen> {
                               icon: const Icon(Icons.close_rounded),
                             ),
                           FilledButton.icon(
-                            onPressed: _inputController.text.trim().isEmpty ||
+                            onPressed:
+                                _inputController.text.trim().isEmpty ||
                                     translation.isTranslating
                                 ? null
                                 : _translate,
                             icon: translation.isTranslating
                                 ? const SizedBox.square(
                                     dimension: 18,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   )
-                                : const Icon(Icons.auto_awesome_rounded, size: 19),
+                                : const Icon(
+                                    Icons.auto_awesome_rounded,
+                                    size: 19,
+                                  ),
                             label: Text(l10n.t('translateAction')),
                           ),
                         ],
@@ -343,7 +365,11 @@ class _LanguageButton extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textMuted, size: 19),
+              const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: AppColors.textMuted,
+                size: 19,
+              ),
             ],
           ),
         ),
@@ -371,7 +397,11 @@ class _EmptyResult extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.subtitles_outlined, color: AppColors.textMuted, size: 28),
+          const Icon(
+            Icons.subtitles_outlined,
+            color: AppColors.textMuted,
+            size: 28,
+          ),
           const SizedBox(height: 10),
           Text(text, style: Theme.of(context).textTheme.bodyMedium),
         ],
@@ -422,18 +452,23 @@ class _ResultCard extends StatelessWidget {
               ),
               const Spacer(),
               if (result.isOfflinePreview)
-                const Icon(Icons.offline_bolt_outlined, color: AppColors.amber, size: 18),
+                const Icon(
+                  Icons.offline_bolt_outlined,
+                  color: AppColors.amber,
+                  size: 18,
+                ),
             ],
           ),
           const SizedBox(height: 16),
           Directionality(
-            textDirection: language.isRtl ? TextDirection.rtl : TextDirection.ltr,
+            textDirection: language.isRtl
+                ? TextDirection.rtl
+                : TextDirection.ltr,
             child: SelectableText(
               result.text,
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    fontSize: 19,
-                    height: 1.55,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(fontSize: 19, height: 1.55),
             ),
           ),
           const SizedBox(height: 17),

@@ -45,14 +45,24 @@ class BillingSheet extends StatelessWidget {
                   gradient: AppColors.heroGradient,
                   borderRadius: BorderRadius.circular(19),
                 ),
-                child: const Icon(Icons.public_rounded, color: Colors.white, size: 29),
+                child: const Icon(
+                  Icons.public_rounded,
+                  color: Colors.white,
+                  size: 29,
+                ),
               ),
               const SizedBox(height: 20),
-              Text(l10n.t('choosePlan'), style: Theme.of(context).textTheme.headlineMedium),
+              Text(
+                l10n.t('choosePlan'),
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
               const SizedBox(height: 7),
-              Text(l10n.t('choosePlanBody'), style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textMuted,
-                  )),
+              Text(
+                l10n.t('choosePlanBody'),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: AppColors.textMuted),
+              ),
               const SizedBox(height: 22),
               for (final offer in billing.offers) ...[
                 _OfferCard(
@@ -82,7 +92,8 @@ class BillingSheet extends StatelessWidget {
                   text: l10n.t('purchaseSuccess'),
                 ),
               ],
-              if (billing.status == BillingStatus.error && billing.error != null) ...[
+              if (billing.status == BillingStatus.error &&
+                  billing.error != null) ...[
                 _StatusMessage(
                   icon: Icons.error_outline_rounded,
                   color: AppColors.coral,
@@ -172,7 +183,9 @@ class _OfferCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(15),
                   ),
                   child: Icon(
-                    featured ? Icons.workspace_premium_rounded : Icons.timer_rounded,
+                    featured
+                        ? Icons.workspace_premium_rounded
+                        : Icons.timer_rounded,
                     color: featured ? AppColors.primaryBright : AppColors.amber,
                   ),
                 ),
@@ -191,9 +204,15 @@ class _OfferCard extends StatelessWidget {
                             letterSpacing: 1.2,
                           ),
                         ),
-                      Text(l10n.t(offer.titleKey), style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        l10n.t(offer.titleKey),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 3),
-                      Text(l10n.t(offer.descriptionKey), style: Theme.of(context).textTheme.bodyMedium),
+                      Text(
+                        l10n.t(offer.descriptionKey),
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
                     ],
                   ),
                 ),
@@ -201,8 +220,8 @@ class _OfferCard extends StatelessWidget {
                 Text(
                   offer.price,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: featured ? AppColors.primaryBright : AppColors.text,
-                      ),
+                    color: featured ? AppColors.primaryBright : AppColors.text,
+                  ),
                 ),
               ],
             ),
@@ -238,7 +257,9 @@ class _StatusMessage extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 19),
           const SizedBox(width: 10),
-          Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
+          Expanded(
+            child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
+          ),
         ],
       ),
     );

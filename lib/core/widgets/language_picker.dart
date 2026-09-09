@@ -55,13 +55,13 @@ class _LanguagePickerSheetState extends State<LanguagePickerSheet> {
     final filtered = query.isEmpty
         ? appLanguages
         : appLanguages
-            .where(
-              (language) =>
-                  language.code.contains(query) ||
-                  language.name.toLowerCase().contains(query) ||
-                  language.nativeName.toLowerCase().contains(query),
-            )
-            .toList(growable: false);
+              .where(
+                (language) =>
+                    language.code.contains(query) ||
+                    language.name.toLowerCase().contains(query) ||
+                    language.nativeName.toLowerCase().contains(query),
+              )
+              .toList(growable: false);
 
     return Column(
       children: [
@@ -97,10 +97,13 @@ class _LanguagePickerSheetState extends State<LanguagePickerSheet> {
                 )
               : ListView.builder(
                   padding: const EdgeInsets.fromLTRB(12, 0, 12, 24),
-                  itemCount: filtered.length +
+                  itemCount:
+                      filtered.length +
                       (widget.includeAutoDetect && query.isEmpty ? 1 : 0),
                   itemBuilder: (context, index) {
-                    if (widget.includeAutoDetect && query.isEmpty && index == 0) {
+                    if (widget.includeAutoDetect &&
+                        query.isEmpty &&
+                        index == 0) {
                       return _LanguageTile(
                         code: 'AI',
                         label: l10n.t('autoDetect'),
@@ -109,7 +112,9 @@ class _LanguagePickerSheetState extends State<LanguagePickerSheet> {
                         onTap: () => Navigator.pop(context, 'auto'),
                       );
                     }
-                    final offset = widget.includeAutoDetect && query.isEmpty ? 1 : 0;
+                    final offset = widget.includeAutoDetect && query.isEmpty
+                        ? 1
+                        : 0;
                     final language = filtered[index - offset];
                     return _LanguageTile(
                       code: language.code.toUpperCase(),
@@ -163,7 +168,9 @@ class _LanguageTile extends StatelessWidget {
             ? Text(
                 code,
                 style: TextStyle(
-                  color: selected ? AppColors.primaryBright : AppColors.textMuted,
+                  color: selected
+                      ? AppColors.primaryBright
+                      : AppColors.textMuted,
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.5,
@@ -176,8 +183,8 @@ class _LanguageTile extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-            ),
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+        ),
       ),
       trailing: selected
           ? const Icon(Icons.check_circle_rounded, color: AppColors.primary)

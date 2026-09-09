@@ -60,8 +60,8 @@ class HomeScreen extends StatelessWidget {
                       Text(
                         l10n.t('worldWaiting'),
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: AppColors.textMuted,
-                            ),
+                          color: AppColors.textMuted,
+                        ),
                       ),
                       const SizedBox(height: 22),
                       _SessionCard(
@@ -84,7 +84,7 @@ class HomeScreen extends StatelessWidget {
                           scrollDirection: Axis.horizontal,
                           physics: const BouncingScrollPhysics(),
                           itemCount: online.rooms.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 12),
+                          separatorBuilder: (_, _) => const SizedBox(width: 12),
                           itemBuilder: (context, index) => _RoomCard(
                             room: online.rooms[index],
                             onTap: onConnect,
@@ -94,7 +94,8 @@ class HomeScreen extends StatelessWidget {
                       const SizedBox(height: 30),
                       SectionHeader(
                         title: l10n.t('peopleAroundWorld'),
-                        subtitle: '${online.onlineCount} ${l10n.t('onlineNow')}',
+                        subtitle:
+                            '${online.onlineCount} ${l10n.t('onlineNow')}',
                       ),
                       const SizedBox(height: 16),
                       _MembersStrip(members: online.members),
@@ -132,8 +133,9 @@ class _Header extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           decoration: BoxDecoration(
-            color: (isOnline ? AppColors.success : AppColors.coral)
-                .withValues(alpha: 0.1),
+            color: (isOnline ? AppColors.success : AppColors.coral).withValues(
+              alpha: 0.1,
+            ),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
               color: (isOnline ? AppColors.success : AppColors.coral)
@@ -153,7 +155,9 @@ class _Header extends StatelessWidget {
               const SizedBox(width: 7),
               Text(
                 isOnline ? _compactCount(onlineCount) : '—',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 12),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(fontSize: 12),
               ),
             ],
           ),
@@ -225,7 +229,9 @@ class _SessionCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
-                  session.isVip ? Icons.workspace_premium_rounded : Icons.timer_outlined,
+                  session.isVip
+                      ? Icons.workspace_premium_rounded
+                      : Icons.timer_outlined,
                   color: session.isVip ? AppColors.amber : AppColors.cyan,
                 ),
               ),
@@ -234,14 +240,20 @@ class _SessionCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(l10n.t('yourTime'), style: Theme.of(context).textTheme.bodyMedium),
+                    Text(
+                      l10n.t('yourTime'),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       session.isVip
                           ? l10n.t('vipUnlimited')
                           : formatDuration(session.remaining),
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            color: session.isVip ? AppColors.amber : AppColors.text,
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            color: session.isVip
+                                ? AppColors.amber
+                                : AppColors.text,
                             fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                     ),
@@ -266,7 +278,10 @@ class _SessionCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text(l10n.t('minutesLeft'), style: Theme.of(context).textTheme.bodyMedium),
+            Text(
+              l10n.t('minutesLeft'),
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
             const SizedBox(height: 17),
           ],
           SizedBox(
@@ -319,7 +334,10 @@ class _RoomCard extends StatelessWidget {
                         color: accent.withValues(alpha: 0.13),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: Text(room.emoji, style: const TextStyle(fontSize: 20)),
+                      child: Text(
+                        room.emoji,
+                        style: const TextStyle(fontSize: 20),
+                      ),
                     ),
                     const Spacer(),
                     for (final code in room.languageCodes.take(3))
@@ -356,12 +374,18 @@ class _RoomCard extends StatelessWidget {
                   room.subtitle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontSize: 12),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   l10n.t('members', {'count': room.memberCount}),
-                  style: TextStyle(color: accent, fontSize: 11, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: accent,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ],
             ),
@@ -392,7 +416,7 @@ class _MembersStrip extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: members.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 18),
+        separatorBuilder: (_, _) => const SizedBox(width: 18),
         itemBuilder: (context, index) {
           final member = members[index];
           final color = _colors[member.avatarSeed % _colors.length];
@@ -408,7 +432,10 @@ class _MembersStrip extends StatelessWidget {
                       backgroundColor: color.withValues(alpha: 0.18),
                       child: Text(
                         initialsFor(member.name),
-                        style: TextStyle(color: color, fontWeight: FontWeight.w800),
+                        style: TextStyle(
+                          color: color,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                     Positioned(
@@ -420,7 +447,10 @@ class _MembersStrip extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: AppColors.success,
                           shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.background, width: 2.5),
+                          border: Border.all(
+                            color: AppColors.background,
+                            width: 2.5,
+                          ),
                         ),
                       ),
                     ),
@@ -431,7 +461,9 @@ class _MembersStrip extends StatelessWidget {
                   member.name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 11),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(fontSize: 11),
                 ),
               ],
             ),
@@ -463,15 +495,26 @@ class _TranslateBanner extends StatelessWidget {
           padding: const EdgeInsets.all(17),
           child: Row(
             children: [
-              const Icon(Icons.translate_rounded, color: AppColors.cyan, size: 28),
+              const Icon(
+                Icons.translate_rounded,
+                color: AppColors.cyan,
+                size: 28,
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(l10n.t('translationTitle'), style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      l10n.t('translationTitle'),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                     const SizedBox(height: 3),
-                    Text(l10n.t('translationBody'), maxLines: 2, style: Theme.of(context).textTheme.bodyMedium),
+                    Text(
+                      l10n.t('translationBody'),
+                      maxLines: 2,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                   ],
                 ),
               ),

@@ -24,15 +24,15 @@ class ConnectScreen extends StatelessWidget {
     final session = context.read<SessionService>();
 
     if (!online.isConnected) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.t('offline'))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.t('offline'))));
       return;
     }
     if (!session.start()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.t('notEnoughTime'))),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.t('notEnoughTime'))));
       await showBillingSheet(context);
       return;
     }
@@ -76,7 +76,9 @@ class ConnectScreen extends StatelessWidget {
                             children: [
                               Text(
                                 l10n.t('discoverTitle'),
-                                style: Theme.of(context).textTheme.headlineMedium,
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.headlineMedium,
                               ),
                               const SizedBox(height: 6),
                               Text(
@@ -117,12 +119,13 @@ class ConnectScreen extends StatelessWidget {
                     GridView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                        maxCrossAxisExtent: 240,
-                        mainAxisExtent: 176,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                      ),
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 240,
+                            mainAxisExtent: 176,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                          ),
                       itemCount: online.members.length,
                       itemBuilder: (context, index) {
                         final member = online.members[index];
@@ -171,7 +174,11 @@ class _OnlineBadge extends StatelessWidget {
             const SizedBox(width: 6),
             Text(
               online.isConnected ? '${online.onlineCount}' : l10n.t('offline'),
-              style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),
@@ -212,7 +219,10 @@ class _RandomConnectCard extends StatelessWidget {
               height: 150,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white.withValues(alpha: 0.14), width: 20),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.14),
+                  width: 20,
+                ),
               ),
             ),
           ),
@@ -220,7 +230,10 @@ class _RandomConnectCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(999),
@@ -237,14 +250,16 @@ class _RandomConnectCard extends StatelessWidget {
               const SizedBox(height: 22),
               Text(
                 l10n.t('worldWaiting'),
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineMedium?.copyWith(color: Colors.white),
               ),
               const SizedBox(height: 7),
               Text(
                 l10n.t('sessionBody'),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withValues(alpha: 0.78),
-                    ),
+                  color: Colors.white.withValues(alpha: 0.78),
+                ),
               ),
               const SizedBox(height: 20),
               FilledButton.icon(
@@ -297,13 +312,18 @@ class _RoomListCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(room.title, style: Theme.of(context).textTheme.titleMedium),
+                    Text(
+                      room.title,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
                     const SizedBox(height: 4),
                     Text(
                       room.subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(fontSize: 12),
                     ),
                     const SizedBox(height: 7),
                     Row(
@@ -312,7 +332,11 @@ class _RoomListCard extends StatelessWidget {
                         const SizedBox(width: 5),
                         Text(
                           l10n.t('members', {'count': room.memberCount}),
-                          style: TextStyle(color: accent, fontSize: 10, fontWeight: FontWeight.w700),
+                          style: TextStyle(
+                            color: accent,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ],
                     ),
@@ -320,10 +344,7 @@ class _RoomListCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 10),
-              FilledButton.tonal(
-                onPressed: onTap,
-                child: Text(l10n.t('join')),
-              ),
+              FilledButton.tonal(onPressed: onTap, child: Text(l10n.t('join'))),
             ],
           ),
         ),
@@ -368,7 +389,10 @@ class _MemberCard extends StatelessWidget {
                         backgroundColor: color.withValues(alpha: 0.18),
                         child: Text(
                           initialsFor(member.name),
-                          style: TextStyle(color: color, fontWeight: FontWeight.w800),
+                          style: TextStyle(
+                            color: color,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
                       Positioned(
@@ -380,7 +404,10 @@ class _MemberCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: AppColors.success,
                             shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.surface, width: 2),
+                            border: Border.all(
+                              color: AppColors.surface,
+                              width: 2,
+                            ),
                           ),
                         ),
                       ),
@@ -388,7 +415,11 @@ class _MemberCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   if (member.isVip)
-                    const Icon(Icons.workspace_premium_rounded, color: AppColors.amber, size: 19),
+                    const Icon(
+                      Icons.workspace_premium_rounded,
+                      color: AppColors.amber,
+                      size: 19,
+                    ),
                 ],
               ),
               const Spacer(),
@@ -398,7 +429,9 @@ class _MemberCard extends StatelessWidget {
                 '${member.city}, ${member.country}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 11),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontSize: 11),
               ),
               const SizedBox(height: 8),
               Container(
@@ -444,7 +477,8 @@ class _LiveSessionSheetState extends State<LiveSessionSheet> {
   Widget build(BuildContext context) {
     final l10n = context.watch<L10nState>();
     final session = context.watch<SessionService>();
-    final title = widget.member?.name ?? widget.room?.title ?? l10n.t('sessionActive');
+    final title =
+        widget.member?.name ?? widget.room?.title ?? l10n.t('sessionActive');
     final subtitle = widget.member == null
         ? l10n.t('sessionBody')
         : '${widget.member!.city}, ${widget.member!.country}';
@@ -456,7 +490,10 @@ class _LiveSessionSheetState extends State<LiveSessionSheet> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.coral.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(999),
@@ -488,20 +525,26 @@ class _LiveSessionSheetState extends State<LiveSessionSheet> {
               Text(
                 session.isVip ? '∞' : formatDuration(session.remaining),
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
             ],
           ),
           const Spacer(),
           _ConversationVisual(member: widget.member),
           const SizedBox(height: 30),
-          Text(title, textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineMedium),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineMedium,
+          ),
           const SizedBox(height: 7),
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppColors.textMuted),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: AppColors.textMuted),
           ),
           const Spacer(),
           if (_translationEnabled)
@@ -511,11 +554,17 @@ class _LiveSessionSheetState extends State<LiveSessionSheet> {
               decoration: BoxDecoration(
                 color: AppColors.cyan.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(17),
-                border: Border.all(color: AppColors.cyan.withValues(alpha: 0.2)),
+                border: Border.all(
+                  color: AppColors.cyan.withValues(alpha: 0.2),
+                ),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.auto_awesome_rounded, color: AppColors.cyan, size: 18),
+                  const Icon(
+                    Icons.auto_awesome_rounded,
+                    color: AppColors.cyan,
+                    size: 18,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -540,15 +589,14 @@ class _LiveSessionSheetState extends State<LiveSessionSheet> {
                 icon: Icons.translate_rounded,
                 active: _translationEnabled,
                 activeColor: AppColors.cyan,
-                onTap: () => setState(
-                  () => _translationEnabled = !_translationEnabled,
-                ),
+                onTap: () =>
+                    setState(() => _translationEnabled = !_translationEnabled),
               ),
               _CallControl(
                 icon: Icons.flag_outlined,
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l10n.t('featureSafe'))),
-                ),
+                onTap: () => ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(l10n.t('featureSafe')))),
               ),
             ],
           ),
@@ -585,12 +633,14 @@ class _ConversationVisual extends StatelessWidget {
             Transform.rotate(
               angle: index * math.pi / 3,
               child: Container(
-                width: 180 - index * 24,
-                height: 180 - index * 24,
+                width: (180 - index * 24).toDouble(),
+                height: (180 - index * 24).toDouble(),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.18 + index * 0.06),
+                    color: AppColors.primary.withValues(
+                      alpha: 0.18 + index * 0.06,
+                    ),
                   ),
                 ),
               ),
@@ -618,8 +668,16 @@ class _ConversationVisual extends StatelessWidget {
               ),
             ),
           ),
-          const Positioned(top: 10, right: 12, child: _MessageBubble(text: 'Hello!')),
-          const Positioned(bottom: 5, left: 2, child: _MessageBubble(text: 'Салом!')),
+          const Positioned(
+            top: 10,
+            right: 12,
+            child: _MessageBubble(text: 'Hello!'),
+          ),
+          const Positioned(
+            bottom: 5,
+            left: 2,
+            child: _MessageBubble(text: 'Салом!'),
+          ),
         ],
       ),
     );
@@ -640,7 +698,10 @@ class _MessageBubble extends StatelessWidget {
         borderRadius: BorderRadius.circular(13),
         border: Border.all(color: AppColors.divider),
       ),
-      child: Text(text, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 11)),
+      child: Text(
+        text,
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 11),
+      ),
     );
   }
 }
@@ -670,7 +731,9 @@ class _CallControl extends StatelessWidget {
             ? activeColor.withValues(alpha: 0.14)
             : AppColors.surfaceHigh,
         side: BorderSide(
-          color: active ? activeColor.withValues(alpha: 0.3) : AppColors.divider,
+          color: active
+              ? activeColor.withValues(alpha: 0.3)
+              : AppColors.divider,
         ),
       ),
     );

@@ -108,7 +108,8 @@ class TranslationService extends ChangeNotifier {
       throw const FormatException('Invalid translation response.');
     }
 
-    final translated = payload['translatedText'] ??
+    final translated =
+        payload['translatedText'] ??
         (payload['data'] is Map ? payload['data']['translatedText'] : null);
     if (translated is! String || translated.trim().isEmpty) {
       throw const FormatException('Translation text is missing.');
@@ -116,12 +117,16 @@ class TranslationService extends ChangeNotifier {
 
     return TranslationResult(
       text: translated.trim(),
-      sourceLanguage: (payload['detectedLanguage'] as String?) ?? sourceLanguage,
+      sourceLanguage:
+          (payload['detectedLanguage'] as String?) ?? sourceLanguage,
     );
   }
 
   String _offlineTranslation(String text, String targetLanguage) {
-    final normalized = text.toLowerCase().trim().replaceAll(RegExp(r'[.!?]+$'), '');
+    final normalized = text.toLowerCase().trim().replaceAll(
+      RegExp(r'[.!?]+$'),
+      '',
+    );
     final exact = _offlinePhrases[normalized]?[targetLanguage];
     if (exact != null) return exact;
 

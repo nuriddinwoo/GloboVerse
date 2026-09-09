@@ -6,7 +6,18 @@ class AppLanguage {
   final String nativeName;
 
   String get label => nativeName == name ? name : '$nativeName · $name';
-  bool get isRtl => const {'ar', 'dv', 'fa', 'he', 'ku', 'ps', 'sd', 'ug', 'ur', 'yi'}.contains(code);
+  bool get isRtl => const {
+    'ar',
+    'dv',
+    'fa',
+    'he',
+    'ku',
+    'ps',
+    'sd',
+    'ug',
+    'ur',
+    'yi',
+  }.contains(code);
 }
 
 // ISO 639-1 catalog: 184 language choices. Translation availability is
@@ -79,7 +90,11 @@ const appLanguages = <AppLanguage>[
   AppLanguage('io', 'Ido', 'Ido'),
   AppLanguage('ig', 'Igbo', 'Igbo'),
   AppLanguage('id', 'Indonesian', 'Bahasa Indonesia'),
-  AppLanguage('ia', 'Interlingua (International Auxiliary Language Association)', 'Interlingua (International Auxiliary Language Association)'),
+  AppLanguage(
+    'ia',
+    'Interlingua (International Auxiliary Language Association)',
+    'Interlingua (International Auxiliary Language Association)',
+  ),
   AppLanguage('ie', 'Interlingue', 'Interlingue'),
   AppLanguage('iu', 'Inuktitut', 'Inuktitut'),
   AppLanguage('ik', 'Inupiaq', 'Inupiaq'),

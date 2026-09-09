@@ -5,7 +5,10 @@ void main() {
   group('formatDuration', () {
     test('formats minute and hour durations', () {
       expect(formatDuration(const Duration(seconds: 65)), '01:05');
-      expect(formatDuration(const Duration(hours: 2, minutes: 3, seconds: 4)), '02:03:04');
+      expect(
+        formatDuration(const Duration(hours: 2, minutes: 3, seconds: 4)),
+        '02:03:04',
+      );
     });
 
     test('never displays a negative duration', () {

@@ -41,11 +41,13 @@ class SettingsService extends ChangeNotifier {
     _displayName = _preferences?.getString(_displayNameKey) ?? '';
     _onboardingComplete = _preferences?.getBool(_onboardingKey) ?? false;
     _notificationsEnabled = _preferences?.getBool(_notificationsKey) ?? true;
-    _remainingSeconds = _preferences?.getInt(_remainingSecondsKey) ??
+    _remainingSeconds =
+        _preferences?.getInt(_remainingSecondsKey) ??
         const Duration(minutes: 20).inSeconds;
     _sessionWasActive = _preferences?.getBool(_sessionActiveKey) ?? false;
     _processedPurchases =
-        (_preferences?.getStringList(_processedPurchasesKey) ?? const <String>[])
+        (_preferences?.getStringList(_processedPurchasesKey) ??
+                const <String>[])
             .toSet();
 
     final vipMilliseconds = _preferences?.getInt(_vipUntilKey);
@@ -125,7 +127,10 @@ class SettingsService extends ChangeNotifier {
     _sessionUpdatedAt = updatedAt;
     await Future.wait([
       _preferences?.setBool(_sessionActiveKey, active) ?? Future.value(true),
-      _preferences?.setInt(_sessionUpdatedAtKey, updatedAt.millisecondsSinceEpoch) ??
+      _preferences?.setInt(
+            _sessionUpdatedAtKey,
+            updatedAt.millisecondsSinceEpoch,
+          ) ??
           Future.value(true),
     ]);
   }

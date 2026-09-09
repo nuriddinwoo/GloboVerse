@@ -5,14 +5,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 
 import 'settings_service.dart';
 
-enum BillingStatus {
-  loading,
-  ready,
-  purchasing,
-  success,
-  unavailable,
-  error,
-}
+enum BillingStatus { loading, ready, purchasing, success, unavailable, error }
 
 enum OfferKind { consumable, subscription }
 
@@ -131,11 +124,15 @@ class BillingService extends ChangeNotifier {
         _error = response.error?.message;
       }
 
-      final details = {for (final product in response.productDetails) product.id: product};
+      final details = {
+        for (final product in response.productDetails) product.id: product,
+      };
       _offers = _offers
-          .map((offer) => details[offer.id] == null
-              ? offer
-              : offer.withProduct(details[offer.id]!))
+          .map(
+            (offer) => details[offer.id] == null
+                ? offer
+                : offer.withProduct(details[offer.id]!),
+          )
           .toList(growable: false);
       _status = BillingStatus.ready;
     } catch (error) {
@@ -218,7 +215,8 @@ class BillingService extends ChangeNotifier {
   }
 
   Future<void> _deliverPurchase(PurchaseDetails purchase) async {
-    final purchaseId = purchase.purchaseID ??
+    final purchaseId =
+        purchase.purchaseID ??
         '${purchase.productID}:${purchase.transactionDate ?? 'restored'}';
     if (_settings.hasProcessedPurchase(purchaseId)) {
       _status = BillingStatus.ready;

@@ -28,10 +28,7 @@ class _HomeShellState extends State<HomeShell> {
   Widget build(BuildContext context) {
     final l10n = context.watch<L10nState>();
     final screens = [
-      HomeScreen(
-        onConnect: () => _select(2),
-        onTranslate: () => _select(1),
-      ),
+      HomeScreen(onConnect: () => _select(2), onTranslate: () => _select(1)),
       const TranslateScreen(),
       const ConnectScreen(),
       const ProfileScreen(),
@@ -59,22 +56,34 @@ class _HomeShellState extends State<HomeShell> {
           destinations: [
             NavigationDestination(
               icon: const Icon(Icons.home_outlined),
-              selectedIcon: const Icon(Icons.home_rounded, color: AppColors.primaryBright),
+              selectedIcon: const Icon(
+                Icons.home_rounded,
+                color: AppColors.primaryBright,
+              ),
               label: l10n.t('home'),
             ),
             NavigationDestination(
               icon: const Icon(Icons.translate_outlined),
-              selectedIcon: const Icon(Icons.translate_rounded, color: AppColors.primaryBright),
+              selectedIcon: const Icon(
+                Icons.translate_rounded,
+                color: AppColors.primaryBright,
+              ),
               label: l10n.t('translate'),
             ),
             NavigationDestination(
               icon: const Icon(Icons.travel_explore_outlined),
-              selectedIcon: const Icon(Icons.travel_explore_rounded, color: AppColors.primaryBright),
+              selectedIcon: const Icon(
+                Icons.travel_explore_rounded,
+                color: AppColors.primaryBright,
+              ),
               label: l10n.t('connect'),
             ),
             NavigationDestination(
               icon: const Icon(Icons.person_outline_rounded),
-              selectedIcon: const Icon(Icons.person_rounded, color: AppColors.primaryBright),
+              selectedIcon: const Icon(
+                Icons.person_rounded,
+                color: AppColors.primaryBright,
+              ),
               label: l10n.t('profile'),
             ),
           ],

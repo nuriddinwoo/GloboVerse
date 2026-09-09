@@ -109,8 +109,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     Text(
                       '${_page + 1} / 3',
                       style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                            color: AppColors.textMuted,
-                          ),
+                        color: AppColors.textMuted,
+                      ),
                     ),
                   ],
                 ),
@@ -128,7 +128,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       controller: _nameController,
                       errorText: _nameError,
                       onChanged: (_) {
-                        if (_nameError != null) setState(() => _nameError = null);
+                        if (_nameError != null) {
+                          setState(() => _nameError = null);
+                        }
                       },
                     ),
                   ],
@@ -140,7 +142,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   22,
                   10,
                   22,
-                  math.max(18, MediaQuery.viewInsetsOf(context).bottom + 12),
+                  math.max(18.0, MediaQuery.viewInsetsOf(context).bottom + 12),
                 ),
                 child: Column(
                   children: [
@@ -170,7 +172,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         child: auth.isBusy
                             ? const SizedBox.square(
                                 dimension: 22,
-                                child: CircularProgressIndicator(strokeWidth: 2.4),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.4,
+                                ),
                               )
                             : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -181,7 +185,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                         : l10n.t('continue'),
                                   ),
                                   const SizedBox(width: 8),
-                                  const Icon(Icons.arrow_forward_rounded, size: 20),
+                                  const Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: 20,
+                                  ),
                                 ],
                               ),
                       ),
@@ -214,25 +221,40 @@ class _WelcomePage extends StatelessWidget {
           Text(
             l10n.t('welcomeEyebrow'),
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: AppColors.cyan,
-                  letterSpacing: 1.7,
-                  fontSize: 11,
-                ),
+              color: AppColors.cyan,
+              letterSpacing: 1.7,
+              fontSize: 11,
+            ),
           ),
           const SizedBox(height: 12),
-          Text(l10n.t('welcomeTitle'), style: Theme.of(context).textTheme.displayLarge),
+          Text(
+            l10n.t('welcomeTitle'),
+            style: Theme.of(context).textTheme.displayLarge,
+          ),
           const SizedBox(height: 16),
-          Text(l10n.t('welcomeBody'), style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppColors.textMuted,
-              )),
+          Text(
+            l10n.t('welcomeBody'),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: AppColors.textMuted),
+          ),
           const SizedBox(height: 24),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: [
-              _FeaturePill(icon: Icons.translate_rounded, label: l10n.t('featureTranslate')),
-              _FeaturePill(icon: Icons.people_alt_rounded, label: l10n.t('featurePeople')),
-              _FeaturePill(icon: Icons.verified_user_rounded, label: l10n.t('featureSafe')),
+              _FeaturePill(
+                icon: Icons.translate_rounded,
+                label: l10n.t('featureTranslate'),
+              ),
+              _FeaturePill(
+                icon: Icons.people_alt_rounded,
+                label: l10n.t('featurePeople'),
+              ),
+              _FeaturePill(
+                icon: Icons.verified_user_rounded,
+                label: l10n.t('featureSafe'),
+              ),
             ],
           ),
         ],
@@ -248,7 +270,8 @@ class _WorldOrb extends StatefulWidget {
   State<_WorldOrb> createState() => _WorldOrbState();
 }
 
-class _WorldOrbState extends State<_WorldOrb> with SingleTickerProviderStateMixin {
+class _WorldOrbState extends State<_WorldOrb>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
   @override
@@ -299,7 +322,9 @@ class _WorldOrbState extends State<_WorldOrb> with SingleTickerProviderStateMixi
               height: 218,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+                border: Border.all(
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                ),
               ),
               child: Align(
                 alignment: Alignment.topCenter,
@@ -355,7 +380,11 @@ class _FloatingFlag extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w700),
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -411,14 +440,24 @@ class _LanguagePage extends StatelessWidget {
               gradient: AppColors.heroGradient,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Icon(Icons.language_rounded, color: Colors.white, size: 30),
+            child: const Icon(
+              Icons.language_rounded,
+              color: Colors.white,
+              size: 30,
+            ),
           ),
           const SizedBox(height: 28),
-          Text(l10n.t('languageTitle'), style: Theme.of(context).textTheme.displaySmall),
+          Text(
+            l10n.t('languageTitle'),
+            style: Theme.of(context).textTheme.displaySmall,
+          ),
           const SizedBox(height: 14),
-          Text(l10n.t('languageBody'), style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppColors.textMuted,
-              )),
+          Text(
+            l10n.t('languageBody'),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: AppColors.textMuted),
+          ),
           const SizedBox(height: 30),
           Card(
             child: InkWell(
@@ -450,13 +489,22 @@ class _LanguagePage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(selected.nativeName, style: Theme.of(context).textTheme.titleMedium),
+                          Text(
+                            selected.nativeName,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
                           const SizedBox(height: 3),
-                          Text(selected.name, style: Theme.of(context).textTheme.bodyMedium),
+                          Text(
+                            selected.name,
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
                         ],
                       ),
                     ),
-                    const Icon(Icons.unfold_more_rounded, color: AppColors.textMuted),
+                    const Icon(
+                      Icons.unfold_more_rounded,
+                      color: AppColors.textMuted,
+                    ),
                   ],
                 ),
               ),
@@ -466,27 +514,33 @@ class _LanguagePage extends StatelessWidget {
           Wrap(
             spacing: 9,
             runSpacing: 9,
-            children: quickCodes.map((code) {
-              final language = languageByCode(code);
-              final selected = code == l10n.code;
-              return ChoiceChip(
-                label: Text(language.nativeName),
-                selected: selected,
-                onSelected: (_) async {
-                  l10n.setLanguage(code);
-                  await context.read<SettingsService>().setLanguageCode(code);
-                },
-                selectedColor: AppColors.primary.withValues(alpha: 0.24),
-                backgroundColor: AppColors.surface,
-                side: BorderSide(
-                  color: selected ? AppColors.primary : AppColors.divider,
-                ),
-                labelStyle: TextStyle(
-                  color: selected ? AppColors.primaryBright : AppColors.text,
-                  fontWeight: FontWeight.w600,
-                ),
-              );
-            }).toList(growable: false),
+            children: quickCodes
+                .map((code) {
+                  final language = languageByCode(code);
+                  final selected = code == l10n.code;
+                  return ChoiceChip(
+                    label: Text(language.nativeName),
+                    selected: selected,
+                    onSelected: (_) async {
+                      l10n.setLanguage(code);
+                      await context.read<SettingsService>().setLanguageCode(
+                        code,
+                      );
+                    },
+                    selectedColor: AppColors.primary.withValues(alpha: 0.24),
+                    backgroundColor: AppColors.surface,
+                    side: BorderSide(
+                      color: selected ? AppColors.primary : AppColors.divider,
+                    ),
+                    labelStyle: TextStyle(
+                      color: selected
+                          ? AppColors.primaryBright
+                          : AppColors.text,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  );
+                })
+                .toList(growable: false),
           ),
         ],
       ),
@@ -522,16 +576,29 @@ class _ProfilePage extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: AppColors.cyan.withValues(alpha: 0.35)),
             ),
-            child: const Icon(Icons.waving_hand_rounded, color: AppColors.cyan, size: 30),
+            child: const Icon(
+              Icons.waving_hand_rounded,
+              color: AppColors.cyan,
+              size: 30,
+            ),
           ),
           const SizedBox(height: 28),
-          Text(l10n.t('profileTitle'), style: Theme.of(context).textTheme.displaySmall),
+          Text(
+            l10n.t('profileTitle'),
+            style: Theme.of(context).textTheme.displaySmall,
+          ),
           const SizedBox(height: 14),
-          Text(l10n.t('profileBody'), style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: AppColors.textMuted,
-              )),
+          Text(
+            l10n.t('profileBody'),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyLarge?.copyWith(color: AppColors.textMuted),
+          ),
           const SizedBox(height: 30),
-          Text(l10n.t('yourName'), style: Theme.of(context).textTheme.labelLarge),
+          Text(
+            l10n.t('yourName'),
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
           const SizedBox(height: 10),
           TextField(
             controller: controller,
@@ -551,12 +618,18 @@ class _ProfilePage extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.shield_outlined, color: AppColors.success, size: 18),
+              const Icon(
+                Icons.shield_outlined,
+                color: AppColors.success,
+                size: 18,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   l10n.t('termsNote'),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 12),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontSize: 12),
                 ),
               ),
             ],

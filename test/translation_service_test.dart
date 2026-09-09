@@ -17,18 +17,21 @@ void main() {
     service.dispose();
   });
 
-  test('unknown offline text stays visible instead of faking a translation', () async {
-    final service = TranslationService();
-    await service.init();
+  test(
+    'unknown offline text stays visible instead of faking a translation',
+    () async {
+      final service = TranslationService();
+      await service.init();
 
-    final result = await service.translate(
-      text: 'A sentence not in the phrasebook',
-      sourceLanguage: 'en',
-      targetLanguage: 'es',
-    );
+      final result = await service.translate(
+        text: 'A sentence not in the phrasebook',
+        sourceLanguage: 'en',
+        targetLanguage: 'es',
+      );
 
-    expect(result?.text, 'A sentence not in the phrasebook');
-    expect(result?.isOfflinePreview, isTrue);
-    service.dispose();
-  });
+      expect(result?.text, 'A sentence not in the phrasebook');
+      expect(result?.isOfflinePreview, isTrue);
+      service.dispose();
+    },
+  );
 }

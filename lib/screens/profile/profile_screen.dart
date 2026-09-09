@@ -94,7 +94,9 @@ class ProfileScreen extends StatelessWidget {
     final session = context.watch<SessionService>();
     final billing = context.watch<BillingService>();
     final language = languageByCode(l10n.code);
-    final name = settings.displayName.isEmpty ? l10n.t('guest') : settings.displayName;
+    final name = settings.displayName.isEmpty
+        ? l10n.t('guest')
+        : settings.displayName;
 
     return SafeArea(
       bottom: false,
@@ -105,11 +107,17 @@ class ProfileScreen extends StatelessWidget {
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(20, 24, 20, 116),
             children: [
-              Text(l10n.t('profile'), style: Theme.of(context).textTheme.headlineMedium),
+              Text(
+                l10n.t('profile'),
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
               const SizedBox(height: 22),
               _ProfileHeader(name: name, onEdit: () => _editName(context)),
               const SizedBox(height: 18),
-              _PlanCard(session: session, onTap: () => showBillingSheet(context)),
+              _PlanCard(
+                session: session,
+                onTap: () => showBillingSheet(context),
+              ),
               const SizedBox(height: 28),
               _SectionLabel(label: l10n.t('preferences')),
               const SizedBox(height: 10),
@@ -131,7 +139,10 @@ class ProfileScreen extends StatelessWidget {
                       color: AppColors.amber,
                     ),
                     title: Text(l10n.t('notifications')),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 3,
+                    ),
                   ),
                 ],
               ),
@@ -144,7 +155,9 @@ class ProfileScreen extends StatelessWidget {
                     icon: Icons.workspace_premium_outlined,
                     color: AppColors.primaryBright,
                     title: l10n.t('plan'),
-                    subtitle: session.isVip ? l10n.t('vipPlan') : l10n.t('freePlan'),
+                    subtitle: session.isVip
+                        ? l10n.t('vipPlan')
+                        : l10n.t('freePlan'),
                     onTap: () => showBillingSheet(context),
                   ),
                   const Divider(height: 1, indent: 66),
@@ -163,7 +176,9 @@ class ProfileScreen extends StatelessWidget {
                 onPressed: () => _confirmSignOut(context),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.coral,
-                  side: BorderSide(color: AppColors.coral.withValues(alpha: 0.32)),
+                  side: BorderSide(
+                    color: AppColors.coral.withValues(alpha: 0.32),
+                  ),
                 ),
                 icon: const Icon(Icons.logout_rounded),
                 label: Text(l10n.t('signOut')),
@@ -172,7 +187,9 @@ class ProfileScreen extends StatelessWidget {
               Text(
                 'GloboVerse · 1.0.0',
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 11),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(fontSize: 11),
               ),
             ],
           ),
@@ -236,7 +253,10 @@ class _ProfileHeader extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Text('GloboVerse Explorer', style: Theme.of(context).textTheme.bodyMedium),
+                      Text(
+                        'GloboVerse Explorer',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
                     ],
                   ),
                 ],
@@ -284,8 +304,12 @@ class _PlanCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Icon(
-                  session.isVip ? Icons.workspace_premium_rounded : Icons.timer_rounded,
-                  color: session.isVip ? AppColors.amber : AppColors.primaryBright,
+                  session.isVip
+                      ? Icons.workspace_premium_rounded
+                      : Icons.timer_rounded,
+                  color: session.isVip
+                      ? AppColors.amber
+                      : AppColors.primaryBright,
                 ),
               ),
               const SizedBox(width: 13),
@@ -307,7 +331,11 @@ class _PlanCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.textMuted, size: 16),
+              const Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: AppColors.textMuted,
+                size: 16,
+              ),
             ],
           ),
         ),
@@ -389,7 +417,11 @@ class _SettingsTile extends StatelessWidget {
             ),
       trailing: onTap == null
           ? null
-          : const Icon(Icons.arrow_forward_ios_rounded, color: AppColors.textMuted, size: 15),
+          : const Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: AppColors.textMuted,
+              size: 15,
+            ),
     );
   }
 }

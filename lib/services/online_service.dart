@@ -53,82 +53,82 @@ class OnlineService extends ChangeNotifier {
   int get onlineCount => _isConnected ? 1284 : 0;
 
   List<CommunityRoom> get rooms => const [
-        CommunityRoom(
-          id: 'coffee-world',
-          title: 'Coffee around the world',
-          subtitle: 'Easy conversation · Everyone welcome',
-          emoji: '☕',
-          memberCount: 248,
-          languageCodes: ['en', 'es', 'fr'],
-          accentColor: 0xFFFFA45B,
-        ),
-        CommunityRoom(
-          id: 'central-asia',
-          title: 'Central Asia lounge',
-          subtitle: 'Culture, travel & new friends',
-          emoji: '🏔️',
-          memberCount: 186,
-          languageCodes: ['tg', 'uz', 'ru'],
-          accentColor: 0xFF5CC8FF,
-        ),
-        CommunityRoom(
-          id: 'language-swap',
-          title: 'Language exchange',
-          subtitle: 'Practice kindly · All levels',
-          emoji: '💬',
-          memberCount: 421,
-          languageCodes: ['en', 'de', 'ja'],
-          accentColor: 0xFFA68BFF,
-        ),
-        CommunityRoom(
-          id: 'night-owls',
-          title: 'Night owls',
-          subtitle: 'Slow chats from every timezone',
-          emoji: '🌙',
-          memberCount: 97,
-          languageCodes: ['en', 'ar', 'hi'],
-          accentColor: 0xFF6F7DFF,
-        ),
-      ];
+    CommunityRoom(
+      id: 'coffee-world',
+      title: 'Coffee around the world',
+      subtitle: 'Easy conversation · Everyone welcome',
+      emoji: '☕',
+      memberCount: 248,
+      languageCodes: ['en', 'es', 'fr'],
+      accentColor: 0xFFFFA45B,
+    ),
+    CommunityRoom(
+      id: 'central-asia',
+      title: 'Central Asia lounge',
+      subtitle: 'Culture, travel & new friends',
+      emoji: '🏔️',
+      memberCount: 186,
+      languageCodes: ['tg', 'uz', 'ru'],
+      accentColor: 0xFF5CC8FF,
+    ),
+    CommunityRoom(
+      id: 'language-swap',
+      title: 'Language exchange',
+      subtitle: 'Practice kindly · All levels',
+      emoji: '💬',
+      memberCount: 421,
+      languageCodes: ['en', 'de', 'ja'],
+      accentColor: 0xFFA68BFF,
+    ),
+    CommunityRoom(
+      id: 'night-owls',
+      title: 'Night owls',
+      subtitle: 'Slow chats from every timezone',
+      emoji: '🌙',
+      memberCount: 97,
+      languageCodes: ['en', 'ar', 'hi'],
+      accentColor: 0xFF6F7DFF,
+    ),
+  ];
 
   List<WorldMember> get members => const [
-        WorldMember(
-          name: 'Amina',
-          city: 'Dushanbe',
-          country: 'Tajikistan',
-          languageCode: 'tg',
-          avatarSeed: 0,
-          isVip: true,
-        ),
-        WorldMember(
-          name: 'Sofia',
-          city: 'Barcelona',
-          country: 'Spain',
-          languageCode: 'es',
-          avatarSeed: 1,
-        ),
-        WorldMember(
-          name: 'Haruto',
-          city: 'Kyoto',
-          country: 'Japan',
-          languageCode: 'ja',
-          avatarSeed: 2,
-        ),
-        WorldMember(
-          name: 'Malik',
-          city: 'Casablanca',
-          country: 'Morocco',
-          languageCode: 'ar',
-          avatarSeed: 3,
-        ),
-        WorldMember(
-          name: 'Zarina',
-          city: 'Samarkand',
-          country: 'Uzbekistan',
-          languageCode: 'uz',
-          avatarSeed: 4,
-        ),
-      ];
+    WorldMember(
+      name: 'Amina',
+      city: 'Dushanbe',
+      country: 'Tajikistan',
+      languageCode: 'tg',
+      avatarSeed: 0,
+      isVip: true,
+    ),
+    WorldMember(
+      name: 'Sofia',
+      city: 'Barcelona',
+      country: 'Spain',
+      languageCode: 'es',
+      avatarSeed: 1,
+    ),
+    WorldMember(
+      name: 'Haruto',
+      city: 'Kyoto',
+      country: 'Japan',
+      languageCode: 'ja',
+      avatarSeed: 2,
+    ),
+    WorldMember(
+      name: 'Malik',
+      city: 'Casablanca',
+      country: 'Morocco',
+      languageCode: 'ar',
+      avatarSeed: 3,
+    ),
+    WorldMember(
+      name: 'Zarina',
+      city: 'Samarkand',
+      country: 'Uzbekistan',
+      languageCode: 'uz',
+      avatarSeed: 4,
+    ),
+  ];
 
   Future<void> connect() async {
     _subscription ??= _connectivity.onConnectivityChanged.listen(_updateStatus);
@@ -144,7 +144,8 @@ class OnlineService extends ChangeNotifier {
   Future<void> refresh() => connect();
 
   void _updateStatus(List<ConnectivityResult> results) {
-    final next = results.isNotEmpty &&
+    final next =
+        results.isNotEmpty &&
         results.any((result) => result != ConnectivityResult.none);
     if (next == _isConnected && _isInitialized) return;
     _isConnected = next;

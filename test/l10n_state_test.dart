@@ -28,7 +28,10 @@ void main() {
 
   test('ISO language catalog contains 184 unique codes', () {
     expect(appLanguages, hasLength(184));
-    expect(appLanguages.map((language) => language.code).toSet(), hasLength(184));
+    expect(
+      appLanguages.map((language) => language.code).toSet(),
+      hasLength(184),
+    );
     expect(languageByCode('tg-TJ').nativeName, 'Тоҷикӣ');
   });
 }

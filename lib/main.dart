@@ -28,8 +28,7 @@ Future<void> main() async {
     ..refreshVip()
     ..resume();
   final billing = BillingService(settings)
-    ..onHourPassGranted =
-        () => session.extendBy(const Duration(hours: 1));
+    ..onHourPassGranted = () => session.extendBy(const Duration(hours: 1));
   final translation = TranslationService();
   final online = OnlineService();
   final stripe = StripeService(settings);

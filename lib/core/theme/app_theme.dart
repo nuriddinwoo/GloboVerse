@@ -99,7 +99,7 @@ abstract final class AppTheme {
           letterSpacing: 0.1,
         ),
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: const AppBarThemeData(
         backgroundColor: Colors.transparent,
         foregroundColor: AppColors.text,
         surfaceTintColor: Colors.transparent,
@@ -121,12 +121,15 @@ abstract final class AppTheme {
           side: const BorderSide(color: AppColors.divider),
         ),
       ),
-      inputDecorationTheme: InputDecorationTheme(
+      inputDecorationTheme: InputDecorationThemeData(
         filled: true,
         fillColor: AppColors.surfaceHigh,
         hintStyle: const TextStyle(color: AppColors.textMuted),
         labelStyle: const TextStyle(color: AppColors.textMuted),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 18,
+          vertical: 17,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(18),
           borderSide: BorderSide.none,
@@ -152,7 +155,9 @@ abstract final class AppTheme {
           disabledBackgroundColor: AppColors.surfaceHigh,
           disabledForegroundColor: AppColors.textMuted,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
           textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
         ),
       ),
@@ -161,7 +166,9 @@ abstract final class AppTheme {
           minimumSize: const Size(48, 52),
           foregroundColor: AppColors.text,
           side: const BorderSide(color: AppColors.divider),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
           textStyle: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
         ),
       ),
@@ -174,10 +181,17 @@ abstract final class AppTheme {
           IconThemeData(color: AppColors.textMuted, size: 24),
         ),
         labelTextStyle: const WidgetStatePropertyAll(
-          TextStyle(color: AppColors.textMuted, fontSize: 11, fontWeight: FontWeight.w600),
+          TextStyle(
+            color: AppColors.textMuted,
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
-      dividerTheme: const DividerThemeData(color: AppColors.divider, thickness: 1),
+      dividerTheme: const DividerThemeData(
+        color: AppColors.divider,
+        thickness: 1,
+      ),
       snackBarTheme: SnackBarThemeData(
         backgroundColor: AppColors.surfaceHigh,
         contentTextStyle: const TextStyle(color: AppColors.text),

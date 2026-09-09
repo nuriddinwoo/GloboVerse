@@ -1,6 +1,6 @@
 # This file tracks properties of this Flutter project.
 version:
-  revision: "d3b14c87"
+  revision: "d3b14c876900e553bc736ca19295fc09e3853e8e"
   channel: "stable"
 
 project_type: app
@@ -8,11 +8,17 @@ project_type: app
 migration:
   platforms:
     - platform: root
-      create_revision: d3b14c87
-      base_revision: d3b14c87
+      create_revision: d3b14c876900e553bc736ca19295fc09e3853e8e
+      base_revision: d3b14c876900e553bc736ca19295fc09e3853e8e
+    - platform: android
+      create_revision: d3b14c876900e553bc736ca19295fc09e3853e8e
+      base_revision: d3b14c876900e553bc736ca19295fc09e3853e8e
+    - platform: ios
+      create_revision: d3b14c876900e553bc736ca19295fc09e3853e8e
+      base_revision: d3b14c876900e553bc736ca19295fc09e3853e8e
     - platform: web
-      create_revision: d3b14c87
-      base_revision: d3b14c87
+      create_revision: d3b14c876900e553bc736ca19295fc09e3853e8e
+      base_revision: d3b14c876900e553bc736ca19295fc09e3853e8e
 
   unmanaged_files:
     - 'lib/main.dart'

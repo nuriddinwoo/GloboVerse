@@ -60,7 +60,8 @@ const Map<String, Map<String, String>> _strings = {
     'retry': 'Try again',
     'welcomeEyebrow': 'WELCOME TO GLOBOVERSE',
     'welcomeTitle': 'One world.\nEvery voice.',
-    'welcomeBody': 'Meet people across borders, translate naturally, and make the world feel a little closer.',
+    'welcomeBody':
+        'Meet people across borders, translate naturally, and make the world feel a little closer.',
     'featureTranslate': 'Live translation',
     'featurePeople': 'Real people',
     'featureSafe': 'Safe spaces',
@@ -73,7 +74,8 @@ const Map<String, Map<String, String>> _strings = {
     'nameHint': 'e.g. Alex',
     'nameRequired': 'Enter at least 2 characters',
     'joinCommunity': 'Enter GloboVerse',
-    'termsNote': 'By continuing, you agree to our Community Guidelines and Privacy Policy.',
+    'termsNote':
+        'By continuing, you agree to our Community Guidelines and Privacy Policy.',
     'home': 'Home',
     'translate': 'Translate',
     'connect': 'Connect',
@@ -151,12 +153,14 @@ const Map<String, Map<String, String>> _strings = {
     'retry': 'Аз нав кӯшиш кунед',
     'welcomeEyebrow': 'ХУШ ОМАДЕД БА GLOBOVERSE',
     'welcomeTitle': 'Як ҷаҳон.\nҲар як садо.',
-    'welcomeBody': 'Бо одамони кишварҳои дигар шинос шавед, озодона тарҷума кунед ва ҷаҳонро наздиктар эҳсос намоед.',
+    'welcomeBody':
+        'Бо одамони кишварҳои дигар шинос шавед, озодона тарҷума кунед ва ҷаҳонро наздиктар эҳсос намоед.',
     'featureTranslate': 'Тарҷумаи зинда',
     'featurePeople': 'Одамони воқеӣ',
     'featureSafe': 'Муҳити бехатар',
     'languageTitle': 'Кадом забон бароятон наздик аст?',
-    'languageBody': 'Забони барномаро интихоб кунед. Онро ҳар вақт иваз карда метавонед.',
+    'languageBody':
+        'Забони барномаро интихоб кунед. Онро ҳар вақт иваз карда метавонед.',
     'searchLanguages': 'Ҷустуҷӯ миёни 184 забон',
     'profileTitle': 'Саҳифаи худро созед',
     'profileBody': 'Номеро интихоб кунед, ки дигарон мебинанд.',
@@ -164,7 +168,8 @@ const Map<String, Map<String, String>> _strings = {
     'nameHint': 'масалан, Нуриддин',
     'nameRequired': 'Камаш 2 ҳарф ворид кунед',
     'joinCommunity': 'Ворид шудан ба GloboVerse',
-    'termsNote': 'Бо идома додан, шумо Қоидаҳои ҷомеа ва Сиёсати махфиятро қабул мекунед.',
+    'termsNote':
+        'Бо идома додан, шумо Қоидаҳои ҷомеа ва Сиёсати махфиятро қабул мекунед.',
     'home': 'Асосӣ',
     'translate': 'Тарҷума',
     'connect': 'Муошират',
@@ -238,7 +243,8 @@ const Map<String, Map<String, String>> _strings = {
     'cancel': 'Отмена',
     'welcomeEyebrow': 'ДОБРО ПОЖАЛОВАТЬ В GLOBOVERSE',
     'welcomeTitle': 'Один мир.\nКаждый голос.',
-    'welcomeBody': 'Знакомьтесь с людьми без границ, общайтесь с переводом и делайте мир ближе.',
+    'welcomeBody':
+        'Знакомьтесь с людьми без границ, общайтесь с переводом и делайте мир ближе.',
     'featureTranslate': 'Живой перевод',
     'featurePeople': 'Настоящие люди',
     'featureSafe': 'Безопасное общение',
@@ -306,12 +312,14 @@ const Map<String, Map<String, String>> _strings = {
     'cancel': 'Bekor qilish',
     'welcomeEyebrow': 'GLOBOVERSE’GA XUSH KELIBSIZ',
     'welcomeTitle': 'Bir dunyo.\nHar bir ovoz.',
-    'welcomeBody': 'Chegaralarsiz tanishing, erkin tarjima qiling va dunyoni yaqinroq his eting.',
+    'welcomeBody':
+        'Chegaralarsiz tanishing, erkin tarjima qiling va dunyoni yaqinroq his eting.',
     'featureTranslate': 'Jonli tarjima',
     'featurePeople': 'Haqiqiy odamlar',
     'featureSafe': 'Xavfsiz muhit',
     'languageTitle': 'Qaysi til sizga yaqin?',
-    'languageBody': 'Ilova tilini tanlang. Uni istalgan payt o‘zgartirish mumkin.',
+    'languageBody':
+        'Ilova tilini tanlang. Uni istalgan payt o‘zgartirish mumkin.',
     'searchLanguages': '184 til orasidan qidirish',
     'profileTitle': 'Profilingizni yarating',
     'profileBody': 'Dunyodagi odamlar ko‘radigan ismingizni tanlang.',
