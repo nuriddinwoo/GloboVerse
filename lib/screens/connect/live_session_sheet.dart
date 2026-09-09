@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -100,7 +102,9 @@ class _LiveSessionSheetState extends State<LiveSessionSheet> {
     if (_lastMessageCount == messageCount) return;
     _lastMessageCount = messageCount;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scrollController.hasClients) return;
+      if (!mounted) return;
+      unawaited(context.read<ConversationService>().markIncomingRead());
+      if (!_scrollController.hasClients) return;
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 260),
@@ -135,6 +139,11 @@ class _LiveSessionSheetState extends State<LiveSessionSheet> {
           _ConversationHeader(
             title: conversation.peerName,
             time: session.isVip ? '∞' : formatDuration(session.remaining),
+            statusLabel: conversation.isReconnecting
+                ? l10n.t('reconnecting')
+                : l10n.t('live'),
+            isReconnecting: conversation.isReconnecting,
+            isSyncing: conversation.isSyncing,
             onClose: () => Navigator.pop(context),
           ),
           if (keyboardInset == 0) ...[
@@ -233,45 +242,72 @@ class _ConversationHeader extends StatelessWidget {
   const _ConversationHeader({
     required this.title,
     required this.time,
+    required this.statusLabel,
+    required this.isReconnecting,
+    required this.isSyncing,
     required this.onClose,
   });
 
   final String title;
   final String time;
+  final String statusLabel;
+  final bool isReconnecting;
+  final bool isSyncing;
   final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.read<L10nState>();
+    final statusColor = isReconnecting ? AppColors.amber : AppColors.success;
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-          decoration: BoxDecoration(
-            color: AppColors.coral.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 7,
-                height: 7,
-                decoration: const BoxDecoration(
-                  color: AppColors.coral,
-                  shape: BoxShape.circle,
+        Semantics(
+          liveRegion: isReconnecting,
+          label: statusLabel,
+          excludeSemantics: true,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Row(
+              children: [
+                if (isSyncing && !isReconnecting)
+                  SizedBox(
+                    width: 8,
+                    height: 8,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 1.5,
+                      color: statusColor,
+                    ),
+                  )
+                else
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: statusColor,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                const SizedBox(width: 6),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 82),
+                  child: Text(
+                    statusLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                l10n.t('live'),
-                style: const TextStyle(
-                  color: AppColors.coral,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.8,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
         const SizedBox(width: 10),
@@ -582,6 +618,10 @@ class _ChatMessageBubble extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 1.7),
                     ),
                   ],
+                  if (mine && !sending && !failed) ...[
+                    const SizedBox(height: 7),
+                    _DeliveryIndicator(state: message.deliveryState),
+                  ],
                   if (failed) ...[
                     const SizedBox(height: 7),
                     InkWell(
@@ -613,6 +653,59 @@ class _ChatMessageBubble extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DeliveryIndicator extends StatelessWidget {
+  const _DeliveryIndicator({required this.state});
+
+  final MessageDeliveryState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.read<L10nState>();
+    late final String label;
+    late final IconData icon;
+    var color = AppColors.textMuted;
+    switch (state) {
+      case MessageDeliveryState.read:
+        label = l10n.t('messageRead');
+        icon = Icons.done_all_rounded;
+        color = AppColors.cyan;
+        break;
+      case MessageDeliveryState.delivered:
+        label = l10n.t('messageDelivered');
+        icon = Icons.done_all_rounded;
+        break;
+      case MessageDeliveryState.sent:
+      case MessageDeliveryState.sending:
+      case MessageDeliveryState.failed:
+        label = l10n.t('messageSent');
+        icon = Icons.done_rounded;
+        break;
+    }
+    return Semantics(
+      label: label,
+      excludeSemantics: true,
+      child: Align(
+        alignment: AlignmentDirectional.centerEnd,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 13, color: color),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

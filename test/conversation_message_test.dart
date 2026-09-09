@@ -12,7 +12,7 @@ void main() {
       sourceLanguage: 'tg',
       targetLanguage: 'en',
       timestamp: timestamp,
-      deliveryState: MessageDeliveryState.sent,
+      deliveryState: MessageDeliveryState.read,
     );
 
     final restored = ConversationMessage.fromJson(message.toJson());
@@ -24,6 +24,7 @@ void main() {
     expect(restored.sourceLanguage, 'tg');
     expect(restored.targetLanguage, 'en');
     expect(restored.timestamp, timestamp);
+    expect(restored.deliveryState, MessageDeliveryState.read);
     expect(restored.hasTranslation, isTrue);
   });
 

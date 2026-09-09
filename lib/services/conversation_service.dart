@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/conversation_message.dart';
@@ -10,7 +10,7 @@ import 'translation_service.dart';
 
 enum ConversationStatus { idle, connecting, active, ended, error }
 
-class ConversationService extends ChangeNotifier {
+class ConversationService extends ChangeNotifier with WidgetsBindingObserver {
   ConversationService(
     this._translation,
     this._online, {
@@ -19,13 +19,21 @@ class ConversationService extends ChangeNotifier {
     String? apiToken,
     this.previewConnectDelay = const Duration(milliseconds: 420),
     this.previewReplyDelay = const Duration(milliseconds: 620),
-  }) : _client = client ?? http.Client(),
+    this.pollInterval = const Duration(seconds: 4),
+    this.maximumPollInterval = const Duration(seconds: 30),
+    this.automaticPolling = true,
+  }) : assert(pollInterval > Duration.zero),
+       assert(maximumPollInterval >= pollInterval),
+       _client = client ?? http.Client(),
        _ownsClient = client == null,
        _endpoint = (endpoint ?? _configuredEndpoint).trim().replaceFirst(
          RegExp(r'/+$'),
          '',
        ),
-       _apiToken = (apiToken ?? _configuredApiToken).trim();
+       _apiToken = (apiToken ?? _configuredApiToken).trim() {
+    _online.addListener(_handleConnectivityChanged);
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   static const _configuredEndpoint = String.fromEnvironment(
     'GLOBOVERSE_CHAT_API_URL',
@@ -40,6 +48,9 @@ class ConversationService extends ChangeNotifier {
   static const _maximumIdentifierLength = 200;
   static const _maximumResponseBytes = 1024 * 1024;
   static const _maximumMessagesPerResponse = 50;
+  static const _maximumReceiptsPerResponse = 100;
+  static const _maximumCursorLength = 500;
+  static const _maximumReadBatch = 100;
   static const _reportReasons = {
     'harassment',
     'spam',
@@ -55,35 +66,53 @@ class ConversationService extends ChangeNotifier {
   final String _apiToken;
   final Duration previewConnectDelay;
   final Duration previewReplyDelay;
+  final Duration pollInterval;
+  final Duration maximumPollInterval;
+  final bool automaticPolling;
 
   ConversationStatus _status = ConversationStatus.idle;
   final List<ConversationMessage> _messages = [];
+  final Set<String> _acknowledgedReadIds = {};
+  final Set<String> _pendingReadIds = {};
+  Timer? _pollTimer;
   String? _sessionId;
+  String? _cursor;
   String? _error;
+  String? _syncError;
+  DateTime? _lastSyncedAt;
   String _peerName = 'GloboGuide';
   String _sourceLanguage = 'en';
   String _targetLanguage = 'en';
   int _messageSequence = 0;
   int _generation = 0;
+  int _syncFailures = 0;
   bool _isStarting = false;
   bool _isSending = false;
+  bool _isSyncing = false;
+  bool _isAcknowledgingRead = false;
   bool _isReporting = false;
   bool _isReported = false;
+  bool _isForeground = true;
   bool _isDisposed = false;
 
   ConversationStatus get status => _status;
   List<ConversationMessage> get messages => List.unmodifiable(_messages);
   String? get sessionId => _sessionId;
   String? get error => _error;
+  String? get syncError => _syncError;
+  DateTime? get lastSyncedAt => _lastSyncedAt;
   String get peerName => _peerName;
   String get sourceLanguage => _sourceLanguage;
   String get targetLanguage => _targetLanguage;
   bool get isStarting => _isStarting;
   bool get isSending => _isSending;
+  bool get isSyncing => _isSyncing;
   bool get isReporting => _isReporting;
   bool get isReported => _isReported;
   bool get isPreviewMode => _endpoint.isEmpty;
   bool get isActive => _status == ConversationStatus.active;
+  bool get isReconnecting =>
+      isActive && !isPreviewMode && (!_online.isConnected || _syncFailures > 0);
 
   Future<bool> start({
     required String sourceLanguage,
@@ -120,11 +149,19 @@ class ConversationService extends ChangeNotifier {
 
     final generation = ++_generation;
     _messages.clear();
+    _acknowledgedReadIds.clear();
+    _pendingReadIds.clear();
     _messageSequence = 0;
+    _cursor = null;
     _error = null;
+    _syncError = null;
+    _lastSyncedAt = null;
+    _syncFailures = 0;
     _isReported = false;
     _isReporting = false;
     _isSending = false;
+    _isSyncing = false;
+    _isAcknowledgingRead = false;
     _sourceLanguage = _languageOrFallback(sourceLanguage, 'en');
     _targetLanguage = _languageOrFallback(targetLanguage, 'en');
     final cleanFallbackName = fallbackPeerName.trim();
@@ -174,6 +211,7 @@ class ConversationService extends ChangeNotifier {
         'Conversation session ID',
       );
       final peerName = _readPeerName(payload) ?? _peerName;
+      final cursor = _cursorFromPayload(payload);
       final initialMessages = await _translateIncoming(
         _messagesFromPayload(payload),
         generation,
@@ -185,8 +223,12 @@ class ConversationService extends ChangeNotifier {
       }
       _sessionId = sessionId;
       _peerName = peerName;
+      _cursor = cursor;
       _messages.addAll(initialMessages);
+      _applyReceipts(payload);
+      _lastSyncedAt = DateTime.now();
       _status = ConversationStatus.active;
+      _schedulePoll(generation);
       notifyListeners();
       return true;
     } catch (error) {
@@ -211,6 +253,99 @@ class ConversationService extends ChangeNotifier {
     );
     if (index < 0) return false;
     return _submit(_messages[index].text, retryMessage: _messages[index]);
+  }
+
+  Future<bool> syncNow() async {
+    final generation = _generation;
+    final sessionId = _sessionId;
+    if (sessionId == null || !_canPoll(generation) || _isSyncing) {
+      return false;
+    }
+
+    _pollTimer?.cancel();
+    _pollTimer = null;
+    _isSyncing = true;
+    notifyListeners();
+
+    try {
+      final response = await _client
+          .get(_messagesUri(sessionId), headers: _headers)
+          .timeout(_requestTimeout);
+      final payload = _decodeResponse(response);
+      final received = await _translateIncoming(
+        _messagesFromPayload(payload),
+        generation,
+      );
+      if (!_canPoll(generation)) return false;
+
+      _cursor = _cursorFromPayload(payload, fallback: _cursor);
+      _appendUnique(received);
+      _applyReceipts(payload);
+      _syncFailures = 0;
+      _syncError = null;
+      _lastSyncedAt = DateTime.now();
+      return true;
+    } catch (error) {
+      if (_canPoll(generation)) {
+        _syncFailures += 1;
+        _syncError = _friendlyError(error);
+      }
+      return false;
+    } finally {
+      if (_ownsGeneration(generation)) {
+        _isSyncing = false;
+        _schedulePoll(generation);
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<bool> markIncomingRead() async {
+    if (!isActive || _sessionId == null) return false;
+    for (final message in _messages) {
+      if (message.sender == ConversationMessageSender.peer &&
+          !_acknowledgedReadIds.contains(message.id)) {
+        _pendingReadIds.add(message.id);
+      }
+    }
+    if (_pendingReadIds.isEmpty) return true;
+
+    if (isPreviewMode) {
+      _acknowledgedReadIds.addAll(_pendingReadIds);
+      _pendingReadIds.clear();
+      return true;
+    }
+    if (!_online.isConnected || !_isForeground) return false;
+    if (_isAcknowledgingRead) return true;
+
+    final generation = _generation;
+    final sessionId = _sessionId;
+    if (sessionId == null) return false;
+    _isAcknowledgingRead = true;
+    try {
+      while (_pendingReadIds.isNotEmpty && _isCurrentSession(generation)) {
+        final batch = _pendingReadIds.take(_maximumReadBatch).toList();
+        final response = await _client
+            .post(
+              _uri('/sessions/${Uri.encodeComponent(sessionId)}/read'),
+              headers: _headers,
+              body: jsonEncode({
+                'messageIds': batch,
+                'readAt': DateTime.now().toUtc().toIso8601String(),
+              }),
+            )
+            .timeout(_requestTimeout);
+        _ensureSuccess(response);
+        if (!_isCurrentSession(generation)) return false;
+        _acknowledgedReadIds.addAll(batch);
+        _pendingReadIds.removeAll(batch);
+      }
+      return _pendingReadIds.isEmpty;
+    } catch (_) {
+      return false;
+    } finally {
+      if (_ownsGeneration(generation)) _isAcknowledgingRead = false;
+    }
   }
 
   Future<bool> reportCurrent(String reason) async {
@@ -263,10 +398,20 @@ class ConversationService extends ChangeNotifier {
     final sessionId = _sessionId;
     final shouldDelete = sessionId != null && !isPreviewMode;
     _generation += 1;
+    _pollTimer?.cancel();
+    _pollTimer = null;
     _sessionId = null;
+    _cursor = null;
+    _syncError = null;
+    _lastSyncedAt = null;
+    _syncFailures = 0;
     _isSending = false;
+    _isSyncing = false;
+    _isAcknowledgingRead = false;
     _isReporting = false;
     _messages.clear();
+    _acknowledgedReadIds.clear();
+    _pendingReadIds.clear();
 
     if (_status != ConversationStatus.idle) {
       _status = ConversationStatus.ended;
@@ -368,6 +513,8 @@ class ConversationService extends ChangeNotifier {
           pendingMessage.copyWith(deliveryState: MessageDeliveryState.sent),
         );
         _appendUnique(received);
+        _applyReceipts(payload);
+        _schedulePoll(generation, delay: Duration.zero);
         notifyListeners();
       }
       return true;
@@ -451,8 +598,10 @@ class ConversationService extends ChangeNotifier {
     int generation,
   ) async {
     final translated = <ConversationMessage>[];
+    final knownIds = _messages.map((message) => message.id).toSet();
     for (final message in messages) {
       if (!_ownsGeneration(generation)) break;
+      if (knownIds.contains(message.id)) continue;
       if (message.translatedText != null ||
           message.sourceLanguage == message.targetLanguage) {
         translated.add(message);
@@ -527,6 +676,62 @@ class ConversationService extends ChangeNotifier {
     final knownIds = _messages.map((message) => message.id).toSet();
     for (final message in received) {
       if (knownIds.add(message.id)) _messages.add(message);
+    }
+  }
+
+  void _applyReceipts(Map<String, dynamic> payload) {
+    final values = payload['receipts'];
+    if (values is! List) return;
+    var processed = 0;
+    for (final value in values) {
+      if (processed >= _maximumReceiptsPerResponse) break;
+      processed += 1;
+      if (value is! Map) continue;
+      final idValue = value['messageId'] ?? value['id'];
+      final state = _receiptState(value['deliveryState']);
+      if (idValue is! String ||
+          idValue.isEmpty ||
+          idValue.length > _maximumIdentifierLength ||
+          state == null) {
+        continue;
+      }
+      final index = _messages.indexWhere(
+        (message) => message.isMine && message.id == idValue,
+      );
+      if (index < 0) continue;
+      final current = _messages[index];
+      if (current.deliveryState == MessageDeliveryState.failed ||
+          _deliveryRank(state) > _deliveryRank(current.deliveryState)) {
+        _messages[index] = current.copyWith(deliveryState: state);
+      }
+    }
+  }
+
+  MessageDeliveryState? _receiptState(Object? value) {
+    if (value == MessageDeliveryState.sent.name) {
+      return MessageDeliveryState.sent;
+    }
+    if (value == MessageDeliveryState.delivered.name) {
+      return MessageDeliveryState.delivered;
+    }
+    if (value == MessageDeliveryState.read.name) {
+      return MessageDeliveryState.read;
+    }
+    return null;
+  }
+
+  int _deliveryRank(MessageDeliveryState state) {
+    switch (state) {
+      case MessageDeliveryState.failed:
+        return -1;
+      case MessageDeliveryState.sending:
+        return 0;
+      case MessageDeliveryState.sent:
+        return 1;
+      case MessageDeliveryState.delivered:
+        return 2;
+      case MessageDeliveryState.read:
+        return 3;
     }
   }
 
@@ -625,6 +830,78 @@ class ConversationService extends ChangeNotifier {
     return MessageDeliveryState.sent;
   }
 
+  String? _cursorFromPayload(Map<String, dynamic> payload, {String? fallback}) {
+    final value = payload['cursor'] ?? payload['nextCursor'];
+    if (value == null) return fallback;
+    if (value is! String) return fallback;
+    final cursor = value.trim();
+    if (cursor.isEmpty || cursor.length > _maximumCursorLength) {
+      return fallback;
+    }
+    return cursor;
+  }
+
+  Uri _messagesUri(String sessionId) {
+    final uri = _uri('/sessions/${Uri.encodeComponent(sessionId)}/messages');
+    final cursor = _cursor;
+    if (cursor == null) return uri;
+    return uri.replace(queryParameters: {'after': cursor});
+  }
+
+  bool _canPoll(int generation) {
+    return _isCurrentSession(generation) &&
+        !isPreviewMode &&
+        _isForeground &&
+        _online.isConnected;
+  }
+
+  void _schedulePoll(int generation, {Duration? delay}) {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+    if (!automaticPolling || _isSyncing || !_canPoll(generation)) return;
+    _pollTimer = Timer(delay ?? _nextPollDelay(), () {
+      _pollTimer = null;
+      if (_canPoll(generation)) unawaited(syncNow());
+    });
+  }
+
+  Duration _nextPollDelay() {
+    var multiplier = 1;
+    final steps = _syncFailures > 6 ? 6 : _syncFailures;
+    for (var index = 0; index < steps; index += 1) {
+      multiplier *= 2;
+    }
+    final candidate = pollInterval * multiplier;
+    return candidate > maximumPollInterval ? maximumPollInterval : candidate;
+  }
+
+  void _handleConnectivityChanged() {
+    if (_isDisposed || !isActive || isPreviewMode) return;
+    if (!_online.isConnected) {
+      _pollTimer?.cancel();
+      _pollTimer = null;
+    } else {
+      _schedulePoll(_generation, delay: Duration.zero);
+      unawaited(markIncomingRead());
+    }
+    notifyListeners();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final foreground = state == AppLifecycleState.resumed;
+    if (_isForeground == foreground) return;
+    _isForeground = foreground;
+    if (!foreground) {
+      _pollTimer?.cancel();
+      _pollTimer = null;
+    } else if (isActive && !isPreviewMode) {
+      _schedulePoll(_generation, delay: Duration.zero);
+      unawaited(markIncomingRead());
+    }
+    if (isActive) notifyListeners();
+  }
+
   Uri _uri(String path) {
     final base = Uri.tryParse(_endpoint);
     if (base == null ||
@@ -677,7 +954,12 @@ class ConversationService extends ChangeNotifier {
   void dispose() {
     _isDisposed = true;
     _generation += 1;
+    _pollTimer?.cancel();
+    _online.removeListener(_handleConnectivityChanged);
+    WidgetsBinding.instance.removeObserver(this);
     _messages.clear();
+    _acknowledgedReadIds.clear();
+    _pendingReadIds.clear();
     if (_ownsClient) _client.close();
     super.dispose();
   }

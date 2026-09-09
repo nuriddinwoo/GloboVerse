@@ -1,6 +1,6 @@
 enum ConversationMessageSender { me, peer, system }
 
-enum MessageDeliveryState { sending, sent, failed }
+enum MessageDeliveryState { sending, sent, delivered, read, failed }
 
 class ConversationMessage {
   const ConversationMessage({

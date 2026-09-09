@@ -14,7 +14,7 @@ GloboVerse is a dark, mobile-first Flutter experience for discovering people and
 - Bundled English, Tajik, Russian, and Uzbek interface copy
 - Translation workspace with an optional remote provider and honest offline phrase preview
 - Discover feed, community rooms, and people cards
-- Interactive translated text conversations with starter prompts, delivery retry, and reporting
+- Interactive translated conversations with live polling, read receipts, delivery retry, and reporting
 - Clearly disclosed on-device `GloboGuide` preview when no conversation API is configured
 - Persisted connection timer, one-hour passes, and VIP entitlement state
 - App Store / Google Play billing integration points and optional Stripe web checkout
@@ -65,7 +65,7 @@ The translation endpoint receives:
 
 It should return either `{ "translatedText": "Салом" }` or `{ "data": { "translatedText": "Салом" } }`. A detected source can be returned as `detectedLanguage`.
 
-When `GLOBOVERSE_CHAT_API_URL` is omitted, conversations use a clearly labeled, on-device `GloboGuide` preview. No discovered member is impersonated and no chat message leaves the device. When it is set, the app uses the REST contract in [docs/conversation_api.md](docs/conversation_api.md). `GLOBOVERSE_API_TOKEN` is optional and sent as a bearer token.
+When `GLOBOVERSE_CHAT_API_URL` is omitted, conversations use a clearly labeled, on-device `GloboGuide` preview. No discovered member is impersonated and no chat message leaves the device. When it is set, the app uses the cursor-based REST contract in [docs/conversation_api.md](docs/conversation_api.md), polling only while online and in the foreground. `GLOBOVERSE_API_TOKEN` is optional and sent as a bearer token.
 
 `--dart-define` is not a secret store: its values are compiled into the app. Production builds should obtain short-lived user credentials through a trusted authentication flow rather than embedding long-lived API credentials.
 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:globoverse/models/conversation_message.dart';
 import 'package:globoverse/services/conversation_service.dart';
@@ -88,6 +89,7 @@ void main() {
         online,
         client: client,
         endpoint: 'https://api.example.com',
+        automaticPolling: false,
         apiToken: 'test-token',
       );
       await translation.init();
@@ -118,6 +120,221 @@ void main() {
     },
   );
 
+  testWidgets('automatic polling stops when the session ends', (tester) async {
+    final translation = TranslationService();
+    final online = OnlineService();
+    var pollRequests = 0;
+    final client = MockClient((request) async {
+      if (request.method == 'POST' && request.url.path == '/sessions') {
+        return http.Response('{"id":"session-timer"}', 201);
+      }
+      if (request.method == 'GET') {
+        pollRequests += 1;
+        return http.Response('{"cursor":"timer-cursor"}', 200);
+      }
+      if (request.method == 'DELETE') return http.Response('', 204);
+      return http.Response('Not found', 404);
+    });
+    final conversation = ConversationService(
+      translation,
+      online,
+      client: client,
+      endpoint: 'https://api.example.com',
+      pollInterval: const Duration(seconds: 1),
+      maximumPollInterval: const Duration(seconds: 2),
+    );
+    await translation.init();
+    await conversation.start(sourceLanguage: 'en', targetLanguage: 'tg');
+
+    conversation.didChangeAppLifecycleState(AppLifecycleState.paused);
+    await tester.pump(const Duration(seconds: 2));
+    expect(pollRequests, 0);
+
+    conversation.didChangeAppLifecycleState(AppLifecycleState.resumed);
+    await tester.pump();
+    await tester.pump();
+    expect(pollRequests, 1);
+
+    await conversation.end();
+    await tester.pump(const Duration(seconds: 3));
+    expect(pollRequests, 1);
+
+    conversation.dispose();
+    translation.dispose();
+    online.dispose();
+  });
+
+  test(
+    'polling appends messages, advances cursors, and applies receipts',
+    () async {
+      final translation = TranslationService();
+      final online = OnlineService();
+      final requests = <http.Request>[];
+      final timestamp = DateTime.now().toUtc().toIso8601String();
+      String? sentMessageId;
+      var pollCount = 0;
+      var failNextPoll = false;
+      final client = MockClient((request) async {
+        requests.add(request);
+        if (request.method == 'POST' && request.url.path == '/sessions') {
+          return http.Response(
+            '{"id":"session-live","cursor":"cursor-1"}',
+            201,
+          );
+        }
+        if (request.method == 'POST' &&
+            request.url.path == '/sessions/session-live/messages') {
+          final body = Map<String, dynamic>.from(
+            jsonDecode(request.body) as Map,
+          );
+          sentMessageId = body['id'] as String;
+          return http.Response('{}', 200);
+        }
+        if (request.method == 'GET' &&
+            request.url.path == '/sessions/session-live/messages') {
+          if (failNextPoll) {
+            failNextPoll = false;
+            return http.Response('Temporary failure', 503);
+          }
+          pollCount += 1;
+          return http.Response(
+            jsonEncode({
+              'cursor': pollCount == 1 ? 'cursor-2' : 'cursor-3',
+              'messages': [
+                {
+                  'id': 'peer-live-1',
+                  'sender': 'peer',
+                  'text': 'Hello',
+                  'sourceLanguage': 'en',
+                  'targetLanguage': 'tg',
+                  'timestamp': timestamp,
+                },
+              ],
+              'receipts': [
+                {
+                  'messageId': sentMessageId,
+                  'deliveryState': pollCount == 1 ? 'read' : 'delivered',
+                },
+              ],
+            }),
+            200,
+          );
+        }
+        if (request.method == 'POST' &&
+            request.url.path == '/sessions/session-live/read') {
+          return http.Response('{}', 200);
+        }
+        if (request.method == 'DELETE') return http.Response('', 204);
+        return http.Response('Not found', 404);
+      });
+      final conversation = ConversationService(
+        translation,
+        online,
+        client: client,
+        endpoint: 'https://api.example.com',
+        automaticPolling: false,
+      );
+      await translation.init();
+      expect(
+        await conversation.start(sourceLanguage: 'tg', targetLanguage: 'en'),
+        isTrue,
+      );
+      expect(await conversation.send('Салом'), isTrue);
+
+      expect(await conversation.syncNow(), isTrue);
+      final firstPoll = requests.firstWhere(
+        (request) => request.method == 'GET',
+      );
+      expect(firstPoll.url.queryParameters['after'], 'cursor-1');
+      expect(conversation.messages, hasLength(2));
+      expect(
+        conversation.messages.first.deliveryState,
+        MessageDeliveryState.read,
+      );
+      expect(conversation.messages.last.translatedText, 'Салом');
+      expect(conversation.lastSyncedAt, isNotNull);
+
+      expect(await conversation.markIncomingRead(), isTrue);
+      final readRequest = requests.lastWhere(
+        (request) => request.url.path == '/sessions/session-live/read',
+      );
+      final readBody = Map<String, dynamic>.from(
+        jsonDecode(readRequest.body) as Map,
+      );
+      expect(readBody['messageIds'], ['peer-live-1']);
+
+      expect(await conversation.syncNow(), isTrue);
+      final polls = requests
+          .where((request) => request.method == 'GET')
+          .toList();
+      expect(polls.last.url.queryParameters['after'], 'cursor-2');
+      expect(conversation.messages, hasLength(2));
+      expect(
+        conversation.messages.first.deliveryState,
+        MessageDeliveryState.read,
+      );
+
+      failNextPoll = true;
+      expect(await conversation.syncNow(), isFalse);
+      expect(conversation.isReconnecting, isTrue);
+      expect(conversation.syncError, isNotNull);
+      expect(await conversation.syncNow(), isTrue);
+      expect(conversation.isReconnecting, isFalse);
+      expect(conversation.syncError, isNull);
+
+      await conversation.end();
+      conversation.dispose();
+      translation.dispose();
+      online.dispose();
+    },
+  );
+
+  test('late poll responses are discarded after a session ends', () async {
+    final translation = TranslationService();
+    final online = OnlineService();
+    final pollResponse = Completer<http.Response>();
+    final pollStarted = Completer<void>();
+    final client = MockClient((request) async {
+      if (request.method == 'POST' && request.url.path == '/sessions') {
+        return http.Response('{"id":"session-poll"}', 201);
+      }
+      if (request.method == 'GET') {
+        pollStarted.complete();
+        return pollResponse.future;
+      }
+      if (request.method == 'DELETE') return http.Response('', 204);
+      return http.Response('Not found', 404);
+    });
+    final conversation = ConversationService(
+      translation,
+      online,
+      client: client,
+      endpoint: 'https://api.example.com',
+      automaticPolling: false,
+    );
+    await translation.init();
+    await conversation.start(sourceLanguage: 'tg', targetLanguage: 'en');
+
+    final syncing = conversation.syncNow();
+    await pollStarted.future;
+    await conversation.end();
+    pollResponse.complete(
+      http.Response(
+        '{"cursor":"late","message":{"id":"late-poll",'
+        '"sender":"peer","text":"Hello"}}',
+        200,
+      ),
+    );
+
+    expect(await syncing, isFalse);
+    expect(conversation.messages, isEmpty);
+    expect(conversation.status, ConversationStatus.ended);
+
+    conversation.dispose();
+    translation.dispose();
+    online.dispose();
+  });
+
   test('malformed session responses are rejected', () async {
     final translation = TranslationService();
     final online = OnlineService();
@@ -129,6 +346,7 @@ void main() {
       online,
       client: client,
       endpoint: 'https://api.example.com',
+      automaticPolling: false,
     );
     await translation.init();
 
@@ -171,6 +389,7 @@ void main() {
       online,
       client: client,
       endpoint: 'https://api.example.com',
+      automaticPolling: false,
     );
     await translation.init();
     await conversation.start(sourceLanguage: 'tg', targetLanguage: 'en');
@@ -215,6 +434,7 @@ void main() {
       online,
       client: client,
       endpoint: 'https://api.example.com',
+      automaticPolling: false,
     );
     await translation.init();
     await conversation.start(sourceLanguage: 'tg', targetLanguage: 'en');

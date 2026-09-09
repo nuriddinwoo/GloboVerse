@@ -31,6 +31,7 @@ POST /v1/sessions
 ```json
 {
   "id": "session-123",
+  "cursor": "opaque-cursor-1",
   "peer": {
     "id": "member-42",
     "name": "Amina"
@@ -38,7 +39,7 @@ POST /v1/sessions
 }
 ```
 
-If no valid peer name is returned, the client retains the selected member/room label or displays its localized generic conversation label.
+If no valid peer name is returned, the client retains the selected member/room label or displays its localized generic conversation label. `cursor` is an optional opaque position for incremental message polling.
 
 ## Send a message
 
@@ -94,11 +95,61 @@ or a batch:
 }
 ```
 
-Accepted `sender` values are `me`, `peer`, and `system`. Accepted `deliveryState` values are `sending`, `sent`, and `failed`. Unknown values use safe client defaults. Entries without a non-empty `id` and `text`, invalid language codes, text fields over 4,000 code units, or timestamps more than one day ahead or one year behind the device clock are ignored.
+Accepted `sender` values are `me`, `peer`, and `system`. Accepted `deliveryState` values are `sending`, `sent`, `delivered`, `read`, and `failed`. Unknown values use safe client defaults. Entries without a non-empty `id` and `text`, invalid language codes, text fields over 4,000 code units, or timestamps more than one day ahead or one year behind the device clock are ignored.
 
 The submitted outgoing message remains the client's local source of truth. A response should therefore contain only newly received messages, not an echo of the outgoing object. If an incoming message omits `translatedText`, the client asks its configured translation provider (or honest offline phrase preview) to fill it before display. Servers can return at most 50 usable messages per response; additional entries are ignored.
 
-The current REST adapter ingests messages returned by session creation and message submission; it does not yet open a polling or WebSocket channel. A production realtime adapter can extend `ConversationService` without changing the sheet's message model.
+## Poll for live updates
+
+```http
+GET /v1/sessions/session-123/messages?after=opaque-cursor-1
+```
+
+The client polls while the conversation is active, the app is in the foreground, and connectivity is available. The normal interval is four seconds. Failed polls use exponential backoff capped at 30 seconds; reconnecting, resuming, and successfully sending a message schedule an immediate poll. Only one poll is active at a time.
+
+```json
+{
+  "cursor": "opaque-cursor-2",
+  "messages": [
+    {
+      "id": "message-789",
+      "sender": "peer",
+      "text": "Hello",
+      "translatedText": "Салом",
+      "sourceLanguage": "en",
+      "targetLanguage": "tg",
+      "timestamp": "2026-09-09T12:00:08.000Z"
+    }
+  ],
+  "receipts": [
+    {
+      "messageId": "local-1725897600000-1",
+      "deliveryState": "read"
+    }
+  ]
+}
+```
+
+`cursor` and `nextCursor` are both accepted. The value is opaque, non-empty, and limited to 500 code units. Without a cursor the client still de-duplicates by message ID, but the backend should return a cursor to avoid replaying history. At most 50 messages and 100 receipts are processed per response.
+
+Receipt updates are monotonic: `sent` → `delivered` → `read`. A stale receipt cannot move an outgoing bubble backward. A valid server receipt can recover a locally failed message when the server actually accepted it.
+
+## Acknowledge visible messages
+
+```http
+POST /v1/sessions/session-123/read
+```
+
+```json
+{
+  "messageIds": ["message-789"],
+  "readAt": "2026-09-09T12:00:09.000Z"
+}
+```
+
+The sheet acknowledges peer messages after they become visible. IDs are de-duplicated and submitted in batches of at most 100. Failed acknowledgements remain pending for a later visibility, connectivity, or lifecycle retry. The backend can turn these acknowledgements into `read` receipts for the other participant.
+
+This REST polling adapter requires no extra Flutter dependency. A production WebSocket adapter can later replace polling behind `ConversationService` without changing `ConversationMessage` or the sheet UI.
 
 ## Report a conversation
 
@@ -130,7 +181,8 @@ This request is best effort. The client clears its active conversation even when
 - Non-`2xx`, timeout, network, or malformed responses are failures.
 - A failed outgoing message stays visible with `failed` state and can be retried explicitly.
 - Retrying reuses the same local message ID so the backend can make message submission idempotent.
-- Late responses from a session that has ended are discarded by the client.
+- Late send, poll, translation, and read-acknowledgement responses from an ended session are discarded by the client.
+- Polling pauses while offline or outside the foreground and resumes without advancing a discarded cursor.
 - Starting a new session always ends local ownership of the previous one.
 
 For production, authenticate every session, authorize room/member access server-side, rate-limit writes, sanitize moderation fields, and use idempotency keyed by the client message ID. Web deployments must also allow the app’s HTTPS origin through an appropriately narrow CORS policy.

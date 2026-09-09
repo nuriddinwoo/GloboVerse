@@ -16,22 +16,36 @@ class TranslationResult {
 }
 
 class TranslationService extends ChangeNotifier {
-  static const _endpoint = String.fromEnvironment('TRANSLATION_API_URL');
-  static const _apiKey = String.fromEnvironment('TRANSLATION_API_KEY');
+  TranslationService({http.Client? client, String? endpoint, String? apiKey})
+    : _client = client ?? http.Client(),
+      _ownsClient = client == null,
+      _endpoint = (endpoint ?? _configuredEndpoint).trim(),
+      _apiKey = (apiKey ?? _configuredApiKey).trim();
 
-  final http.Client _client = http.Client();
+  static const _configuredEndpoint = String.fromEnvironment(
+    'TRANSLATION_API_URL',
+  );
+  static const _configuredApiKey = String.fromEnvironment(
+    'TRANSLATION_API_KEY',
+  );
+
+  final http.Client _client;
+  final bool _ownsClient;
+  final String _endpoint;
+  final String _apiKey;
   bool _isReady = false;
-  bool _isTranslating = false;
+  int _activeTranslations = 0;
   String? _error;
+  bool _isDisposed = false;
 
   bool get isReady => _isReady;
-  bool get isTranslating => _isTranslating;
+  bool get isTranslating => _activeTranslations > 0;
   bool get hasRemoteProvider => _endpoint.isNotEmpty;
   String? get error => _error;
 
   Future<void> init() async {
     _isReady = true;
-    notifyListeners();
+    _notify();
   }
 
   TranslationResult? translateOffline({
@@ -65,11 +79,11 @@ class TranslationService extends ChangeNotifier {
     required String targetLanguage,
   }) async {
     final cleanText = text.trim();
-    if (cleanText.isEmpty || _isTranslating) return null;
+    if (cleanText.isEmpty) return null;
 
-    _isTranslating = true;
+    _activeTranslations += 1;
     _error = null;
-    notifyListeners();
+    _notify();
 
     try {
       if (sourceLanguage == targetLanguage) {
@@ -96,8 +110,8 @@ class TranslationService extends ChangeNotifier {
       _error = 'Translation request failed.';
       return null;
     } finally {
-      _isTranslating = false;
-      notifyListeners();
+      _activeTranslations -= 1;
+      _notify();
     }
   }
 
@@ -106,9 +120,16 @@ class TranslationService extends ChangeNotifier {
     required String sourceLanguage,
     required String targetLanguage,
   }) async {
+    final endpoint = Uri.tryParse(_endpoint);
+    if (endpoint == null ||
+        !endpoint.hasScheme ||
+        !endpoint.hasAuthority ||
+        (endpoint.scheme != 'https' && endpoint.scheme != 'http')) {
+      throw const FormatException('Translation API URL is invalid.');
+    }
     final response = await _client
         .post(
-          Uri.parse(_endpoint),
+          endpoint,
           headers: {
             'Content-Type': 'application/json',
             if (_apiKey.isNotEmpty) 'Authorization': 'Bearer $_apiKey',
@@ -133,17 +154,19 @@ class TranslationService extends ChangeNotifier {
       throw const FormatException('Invalid translation response.');
     }
 
-    final translated =
-        payload['translatedText'] ??
-        (payload['data'] is Map ? payload['data']['translatedText'] : null);
+    final data = payload['data'];
+    final nestedTranslation = data is Map ? data['translatedText'] : null;
+    final translated = payload['translatedText'] ?? nestedTranslation;
     if (translated is! String || translated.trim().isEmpty) {
       throw const FormatException('Translation text is missing.');
     }
+    final detectedLanguage = payload['detectedLanguage'];
 
     return TranslationResult(
       text: translated.trim(),
-      sourceLanguage:
-          (payload['detectedLanguage'] as String?) ?? sourceLanguage,
+      sourceLanguage: detectedLanguage is String
+          ? detectedLanguage
+          : sourceLanguage,
     );
   }
 
@@ -191,9 +214,14 @@ class TranslationService extends ChangeNotifier {
         .trim();
   }
 
+  void _notify() {
+    if (!_isDisposed) notifyListeners();
+  }
+
   @override
   void dispose() {
-    _client.close();
+    _isDisposed = true;
+    if (_ownsClient) _client.close();
     super.dispose();
   }
 }
