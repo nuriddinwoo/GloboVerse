@@ -25,12 +25,14 @@ void main() {
       expect(state.locale.languageCode, 'en');
     });
 
-    test('bundles discovery state copy in all interface languages', () {
+    test('bundles new status and action copy in all interface languages', () {
       const codes = ['en', 'tg', 'ru', 'uz'];
       final previewTitles = <String>[];
+      final editProfileLabels = <String>[];
       for (final code in codes) {
         final state = L10nState(code);
         previewTitles.add(state.t('discoveryPreviewTitle'));
+        editProfileLabels.add(state.t('editProfile'));
         expect(
           state.t('discoveryPreviewTitle'),
           isNot('discoveryPreviewTitle'),
@@ -46,6 +48,7 @@ void main() {
         expect(state.t('presenceUnavailable'), isNot('presenceUnavailable'));
       }
       expect(previewTitles.toSet(), hasLength(codes.length));
+      expect(editProfileLabels.toSet(), hasLength(codes.length));
     });
   });
 

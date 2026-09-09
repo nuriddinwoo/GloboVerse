@@ -8,6 +8,7 @@ import '../../l10n/l10n_state.dart';
 import '../../l10n/languages.dart';
 import '../../services/auth_service.dart';
 import '../../services/billing_service.dart';
+import '../../services/online_service.dart';
 import '../../services/session_service.dart';
 import '../../services/settings_service.dart';
 import 'billing_sheet.dart';
@@ -93,6 +94,8 @@ class ProfileScreen extends StatelessWidget {
     final settings = context.watch<SettingsService>();
     final session = context.watch<SessionService>();
     final billing = context.watch<BillingService>();
+    final online = context.watch<OnlineService>();
+    final isOnline = online.isInitialized && online.isConnected;
     final language = languageByCode(l10n.code);
     final name = settings.displayName.isEmpty
         ? l10n.t('guest')
@@ -112,7 +115,20 @@ class ProfileScreen extends StatelessWidget {
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
               const SizedBox(height: 22),
-              _ProfileHeader(name: name, onEdit: () => _editName(context)),
+              _ProfileHeader(
+                name: name,
+                isConnectionKnown: online.isInitialized,
+                isOnline: isOnline,
+                editTooltip: l10n.t('editProfile'),
+                onlineLabel: l10n.t(
+                  !online.isInitialized
+                      ? 'presenceUnavailable'
+                      : isOnline
+                      ? 'online'
+                      : 'offline',
+                ),
+                onEdit: () => _editName(context),
+              ),
               const SizedBox(height: 18),
               _PlanCard(
                 session: session,
@@ -200,9 +216,20 @@ class ProfileScreen extends StatelessWidget {
 }
 
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({required this.name, required this.onEdit});
+  const _ProfileHeader({
+    required this.name,
+    required this.isConnectionKnown,
+    required this.isOnline,
+    required this.editTooltip,
+    required this.onlineLabel,
+    required this.onEdit,
+  });
 
   final String name;
+  final bool isConnectionKnown;
+  final bool isOnline;
+  final String editTooltip;
+  final String onlineLabel;
   final VoidCallback onEdit;
 
   @override
@@ -240,22 +267,35 @@ class _ProfileHeader extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(name, style: Theme.of(context).textTheme.titleLarge),
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
                   const SizedBox(height: 5),
                   Row(
                     children: [
                       Container(
                         width: 7,
                         height: 7,
-                        decoration: const BoxDecoration(
-                          color: AppColors.success,
+                        decoration: BoxDecoration(
+                          color: !isConnectionKnown
+                              ? AppColors.textMuted
+                              : isOnline
+                              ? AppColors.success
+                              : AppColors.coral,
                           shape: BoxShape.circle,
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        'GloboVerse Explorer',
-                        style: Theme.of(context).textTheme.bodyMedium,
+                      Expanded(
+                        child: Text(
+                          onlineLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                       ),
                     ],
                   ),
@@ -263,7 +303,7 @@ class _ProfileHeader extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: 'Edit',
+              tooltip: editTooltip,
               onPressed: onEdit,
               icon: const Icon(Icons.edit_outlined),
             ),

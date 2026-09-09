@@ -150,7 +150,8 @@ class ConnectScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 18),
                       if (online.hasRemoteDiscovery &&
-                          (!online.isInitialized || online.isRefreshing)) ...[
+                          (!online.isInitialized ||
+                              online.showsRefreshProgress)) ...[
                         Semantics(
                           label: l10n.t('refreshingDiscovery'),
                           child: const LinearProgressIndicator(minHeight: 3),

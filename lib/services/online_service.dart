@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 
 class CommunityRoom {
@@ -48,20 +49,41 @@ class WorldMember {
   final bool isOnline;
 }
 
-class OnlineService extends ChangeNotifier {
+class _DiscoveryResponse {
+  const _DiscoveryResponse({required this.payload, required this.etag});
+
+  final Map<String, dynamic>? payload;
+  final String? etag;
+
+  bool get isNotModified => payload == null;
+}
+
+class OnlineService extends ChangeNotifier with WidgetsBindingObserver {
   OnlineService({
     Connectivity? connectivity,
     http.Client? client,
     String? endpoint,
     String? apiToken,
-  }) : _connectivity = connectivity ?? Connectivity(),
+    this.requestTimeout = const Duration(seconds: 15),
+    this.refreshInterval = const Duration(minutes: 1),
+    this.maximumRefreshInterval = const Duration(minutes: 15),
+    this.automaticRefresh = true,
+  }) : assert(requestTimeout > Duration.zero),
+       assert(refreshInterval > Duration.zero),
+       assert(maximumRefreshInterval >= refreshInterval),
+       _connectivity = connectivity ?? Connectivity(),
        _client = client ?? http.Client(),
        _ownsClient = client == null,
        _endpoint = (endpoint ?? _configuredEndpoint).trim().replaceFirst(
          RegExp(r'/+$'),
          '',
        ),
-       _apiToken = (apiToken ?? _configuredApiToken).trim();
+       _apiToken = (apiToken ?? _configuredApiToken).trim() {
+    final lifecycleState = WidgetsBinding.instance.lifecycleState;
+    _isForeground =
+        lifecycleState == null || lifecycleState == AppLifecycleState.resumed;
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   static const _configuredEndpoint = String.fromEnvironment(
     'GLOBOVERSE_DISCOVERY_API_URL',
@@ -69,7 +91,6 @@ class OnlineService extends ChangeNotifier {
   static const _configuredApiToken = String.fromEnvironment(
     'GLOBOVERSE_API_TOKEN',
   );
-  static const _requestTimeout = Duration(seconds: 15);
   static const _maximumResponseBytes = 1024 * 1024;
   static const _maximumRooms = 50;
   static const _maximumMembers = 100;
@@ -81,7 +102,13 @@ class OnlineService extends ChangeNotifier {
   final bool _ownsClient;
   final String _endpoint;
   final String _apiToken;
+  final Duration requestTimeout;
+  final Duration refreshInterval;
+  final Duration maximumRefreshInterval;
+  final bool automaticRefresh;
   StreamSubscription<List<ConnectivityResult>>? _subscription;
+  Timer? _refreshTimer;
+  Completer<void>? _requestAbort;
 
   List<CommunityRoom> _rooms = _previewRooms;
   List<WorldMember> _members = _previewMembers;
@@ -89,15 +116,20 @@ class OnlineService extends ChangeNotifier {
   bool _isConnected = true;
   bool _isInitialized = false;
   bool _isRefreshing = false;
+  bool _showsRefreshProgress = false;
   bool _isPreviewCatalog = true;
+  bool _isForeground = true;
   bool _isDisposed = false;
   int _refreshGeneration = 0;
+  int _refreshFailures = 0;
+  String? _etag;
   String? _discoveryError;
   DateTime? _lastRefreshedAt;
 
   bool get isConnected => _isConnected;
   bool get isInitialized => _isInitialized;
   bool get isRefreshing => _isRefreshing;
+  bool get showsRefreshProgress => _showsRefreshProgress;
   bool get isPreviewCatalog => _isPreviewCatalog;
   bool get hasRemoteDiscovery => _endpoint.isNotEmpty;
   String? get discoveryError => _discoveryError;
@@ -118,6 +150,8 @@ class OnlineService extends ChangeNotifier {
     } catch (_) {
       if (_isDisposed) return;
       _isConnected = false;
+      _cancelRefreshTimer();
+      _cancelActiveRefresh();
     }
     _isInitialized = true;
     _notify();
@@ -136,17 +170,53 @@ class OnlineService extends ChangeNotifier {
     if (hasRemoteDiscovery) await refreshDiscovery();
   }
 
-  Future<bool> refreshDiscovery() async {
-    if (!hasRemoteDiscovery) return true;
-    if (!_isConnected || _isRefreshing || _isDisposed) return false;
+  Future<bool> refreshDiscovery() {
+    return _refreshDiscovery(notifyStart: true);
+  }
 
+  Future<bool> _refreshDiscovery({required bool notifyStart}) async {
+    if (!hasRemoteDiscovery) return true;
+    if (!_isConnected || !_isForeground || _isRefreshing || _isDisposed) {
+      return false;
+    }
+
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
     final generation = ++_refreshGeneration;
+    final abort = Completer<void>();
+    _requestAbort = abort;
     _isRefreshing = true;
+    _showsRefreshProgress = notifyStart;
     _discoveryError = null;
-    _notify();
+    if (notifyStart) _notify();
 
     try {
-      final payload = await _fetchDiscovery().timeout(_requestTimeout);
+      final response = await _fetchDiscovery(abort.future).timeout(
+        requestTimeout,
+        onTimeout: () {
+          if (!abort.isCompleted) abort.complete();
+          throw TimeoutException(
+            'Discovery request timed out.',
+            requestTimeout,
+          );
+        },
+      );
+      if (!_ownsRefresh(generation)) return false;
+      if (response.isNotModified) {
+        if (_isPreviewCatalog || _etag == null) {
+          throw const FormatException(
+            'Discovery cannot use an unvalidated cache response.',
+          );
+        }
+        if (!_ownsRefresh(generation)) return false;
+        _etag = response.etag ?? _etag;
+        _lastRefreshedAt = DateTime.now();
+        _discoveryError = null;
+        _refreshFailures = 0;
+        return true;
+      }
+
+      final payload = response.payload!;
       final onlineCount = _parseOnlineCount(payload['onlineCount']);
       final rooms = _parseRooms(payload['rooms']);
       final members = _parseMembers(payload['members']);
@@ -155,19 +225,25 @@ class OnlineService extends ChangeNotifier {
       _onlineCount = onlineCount;
       _rooms = List.unmodifiable(rooms);
       _members = List.unmodifiable(members);
+      _etag = response.etag;
       _isPreviewCatalog = false;
       _lastRefreshedAt = DateTime.now();
       _discoveryError = null;
+      _refreshFailures = 0;
       return true;
     } catch (error) {
       if (_ownsRefresh(generation)) {
         _discoveryError = _friendlyError(error);
+        if (_refreshFailures < 30) _refreshFailures += 1;
       }
       return false;
     } finally {
+      if (identical(_requestAbort, abort)) _requestAbort = null;
       if (_ownsRefresh(generation)) {
         _isRefreshing = false;
+        _showsRefreshProgress = false;
         _notify();
+        _scheduleNextRefresh();
       }
     }
   }
@@ -186,9 +262,73 @@ class OnlineService extends ChangeNotifier {
         results.any((result) => result != ConnectivityResult.none);
     if (next == _isConnected && _isInitialized) return;
     _isConnected = next;
+    if (!next) {
+      _cancelRefreshTimer();
+      _cancelActiveRefresh();
+    }
     _notify();
-    if (next && refreshRemote && hasRemoteDiscovery) {
-      unawaited(refreshDiscovery());
+    if (next &&
+        refreshRemote &&
+        _isInitialized &&
+        automaticRefresh &&
+        hasRemoteDiscovery) {
+      unawaited(_refreshDiscovery(notifyStart: false));
+    }
+  }
+
+  void _scheduleNextRefresh() {
+    _cancelRefreshTimer();
+    if (!automaticRefresh ||
+        !hasRemoteDiscovery ||
+        !_isConnected ||
+        !_isForeground ||
+        _isRefreshing ||
+        _isDisposed) {
+      return;
+    }
+    _refreshTimer = Timer(_nextRefreshDelay(), () {
+      _refreshTimer = null;
+      unawaited(_refreshDiscovery(notifyStart: false));
+    });
+  }
+
+  Duration _nextRefreshDelay() {
+    var multiplier = 1;
+    final steps = _refreshFailures > 8 ? 8 : _refreshFailures;
+    for (var index = 0; index < steps; index += 1) {
+      multiplier *= 2;
+    }
+    final candidate = refreshInterval * multiplier;
+    return candidate > maximumRefreshInterval
+        ? maximumRefreshInterval
+        : candidate;
+  }
+
+  void _cancelRefreshTimer() {
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
+  }
+
+  void _cancelActiveRefresh() {
+    if (!_isRefreshing) return;
+    _refreshGeneration += 1;
+    _isRefreshing = false;
+    _showsRefreshProgress = false;
+    final abort = _requestAbort;
+    _requestAbort = null;
+    if (abort != null && !abort.isCompleted) abort.complete();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final foreground = state == AppLifecycleState.resumed;
+    if (foreground == _isForeground || _isDisposed) return;
+    _isForeground = foreground;
+    if (!foreground) {
+      _cancelRefreshTimer();
+      _cancelActiveRefresh();
+    } else if (automaticRefresh && _isConnected && hasRemoteDiscovery) {
+      unawaited(_refreshDiscovery(notifyStart: false));
     }
   }
 
@@ -378,16 +518,26 @@ class OnlineService extends ChangeNotifier {
   Map<String, String> get _headers => {
     'Accept': 'application/json',
     if (_apiToken.isNotEmpty) 'Authorization': 'Bearer $_apiToken',
+    if (_etag != null) 'If-None-Match': _etag!,
   };
 
-  Future<Map<String, dynamic>> _fetchDiscovery() async {
-    final request = http.Request('GET', _uri('/discovery'))
-      ..followRedirects = false
-      ..headers.addAll(_headers);
+  Future<_DiscoveryResponse> _fetchDiscovery(Future<void> abortTrigger) async {
+    final request =
+        http.AbortableRequest(
+            'GET',
+            _uri('/discovery'),
+            abortTrigger: abortTrigger,
+          )
+          ..followRedirects = false
+          ..headers.addAll(_headers);
     final response = await _client.send(request);
+    final responseEtag = _parseEtag(response.headers['etag']);
+    if (response.statusCode == 304) {
+      await _cancelResponse(response);
+      return _DiscoveryResponse(payload: null, etag: responseEtag);
+    }
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      final subscription = response.stream.listen((_) {});
-      await subscription.cancel();
+      await _cancelResponse(response);
       throw http.ClientException(
         'Discovery server returned ${response.statusCode}.',
         request.url,
@@ -395,8 +545,7 @@ class OnlineService extends ChangeNotifier {
     }
     if (response.contentLength != null &&
         response.contentLength! > _maximumResponseBytes) {
-      final subscription = response.stream.listen((_) {});
-      await subscription.cancel();
+      await _cancelResponse(response);
       throw const FormatException('Discovery response is too large.');
     }
 
@@ -413,7 +562,25 @@ class OnlineService extends ChangeNotifier {
     if (decoded is! Map) {
       throw const FormatException('Invalid discovery response.');
     }
-    return Map<String, dynamic>.from(decoded);
+    return _DiscoveryResponse(
+      payload: Map<String, dynamic>.from(decoded),
+      etag: responseEtag,
+    );
+  }
+
+  Future<void> _cancelResponse(http.StreamedResponse response) async {
+    final subscription = response.stream.listen((_) {});
+    await subscription.cancel();
+  }
+
+  String? _parseEtag(String? value) {
+    if (value == null) return null;
+    final etag = value.trim();
+    if (etag.length > 256 ||
+        !RegExp(r'^(?:W/)?"[\x21\x23-\x7E]*"$').hasMatch(etag)) {
+      return null;
+    }
+    return etag;
   }
 
   bool _ownsRefresh(int generation) {
@@ -435,6 +602,9 @@ class OnlineService extends ChangeNotifier {
   void dispose() {
     _isDisposed = true;
     _refreshGeneration += 1;
+    WidgetsBinding.instance.removeObserver(this);
+    _cancelRefreshTimer();
+    _cancelActiveRefresh();
     final subscription = _subscription;
     if (subscription != null) unawaited(subscription.cancel());
     if (_ownsClient) _client.close();

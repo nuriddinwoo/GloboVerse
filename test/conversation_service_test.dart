@@ -422,6 +422,7 @@ void main() {
     final online = OnlineService(
       client: discoveryClient,
       endpoint: 'https://discovery.example.com',
+      automaticRefresh: false,
     );
     var pollRequests = 0;
     final chatClient = MockClient((request) async {
@@ -479,6 +480,7 @@ void main() {
     final online = OnlineService(
       client: discoveryClient,
       endpoint: 'https://discovery.example.com',
+      automaticRefresh: false,
     );
     final startBodies = <Map<String, dynamic>>[];
     final chatClient = MockClient((request) async {
