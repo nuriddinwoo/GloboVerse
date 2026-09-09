@@ -37,18 +37,21 @@ class ConnectScreen extends StatelessWidget {
       return;
     }
 
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: false,
-      enableDrag: false,
-      useSafeArea: true,
-      builder: (_) => FractionallySizedBox(
-        heightFactor: 0.92,
-        child: LiveSessionSheet(room: room, member: member),
-      ),
-    );
-    session.pause();
+    try {
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        isDismissible: false,
+        enableDrag: false,
+        useSafeArea: true,
+        builder: (_) => FractionallySizedBox(
+          heightFactor: 0.92,
+          child: LiveSessionSheet(room: room, member: member),
+        ),
+      );
+    } finally {
+      session.pause();
+    }
   }
 
   @override

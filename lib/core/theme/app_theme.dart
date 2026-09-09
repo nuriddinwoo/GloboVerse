@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-abstract final class AppColors {
+abstract class AppColors {
+  const AppColors._();
+
   static const background = Color(0xFF080B18);
   static const surface = Color(0xFF111529);
   static const surfaceHigh = Color(0xFF191E36);
@@ -21,7 +23,9 @@ abstract final class AppColors {
   );
 }
 
-abstract final class AppTheme {
+abstract class AppTheme {
+  const AppTheme._();
+
   static ThemeData dark() {
     const colorScheme = ColorScheme.dark(
       primary: AppColors.primary,

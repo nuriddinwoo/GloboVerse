@@ -20,6 +20,14 @@ void main() {
     },
   );
 
+  test('language settings normalize locale variants', () async {
+    final settings = SettingsService();
+
+    await settings.setLanguageCode('TG-tj');
+
+    expect(settings.languageCode, 'tg');
+  });
+
   test('short display names are rejected', () async {
     final auth = AuthService(SettingsService());
 

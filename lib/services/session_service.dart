@@ -53,7 +53,11 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
   bool start() {
     if (_isActive) return true;
     refreshVip();
-    if (!canStart) return false;
+    if (!canStart) {
+      _isActive = false;
+      unawaited(_saveState());
+      return false;
+    }
     _isActive = true;
     _lastTick = DateTime.now();
     _timer ??= Timer.periodic(const Duration(seconds: 1), (_) => _onTick());

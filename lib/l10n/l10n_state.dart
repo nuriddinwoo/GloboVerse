@@ -45,7 +45,9 @@ class L10nState extends ChangeNotifier {
 }
 
 /// A lightweight bridge for code that cannot read a BuildContext.
-abstract final class L10nStateCode {
+abstract class L10nStateCode {
+  const L10nStateCode._();
+
   static String current = 'en';
 }
 

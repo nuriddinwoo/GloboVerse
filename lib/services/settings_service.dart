@@ -37,7 +37,9 @@ class SettingsService extends ChangeNotifier {
   Future<void> init() async {
     _preferences = await SharedPreferences.getInstance();
     final deviceLanguage = PlatformDispatcher.instance.locale.languageCode;
-    _languageCode = _preferences?.getString(_languageKey) ?? deviceLanguage;
+    _languageCode = _normalizeLanguageCode(
+      _preferences?.getString(_languageKey) ?? deviceLanguage,
+    );
     _displayName = _preferences?.getString(_displayNameKey) ?? '';
     _onboardingComplete = _preferences?.getBool(_onboardingKey) ?? false;
     _notificationsEnabled = _preferences?.getBool(_notificationsKey) ?? true;
@@ -62,10 +64,16 @@ class SettingsService extends ChangeNotifier {
   }
 
   Future<void> setLanguageCode(String value) async {
-    if (value == _languageCode) return;
-    _languageCode = value;
+    final normalized = _normalizeLanguageCode(value);
+    if (normalized == _languageCode) return;
+    _languageCode = normalized;
     notifyListeners();
-    await _preferences?.setString(_languageKey, value);
+    await _preferences?.setString(_languageKey, normalized);
+  }
+
+  static String _normalizeLanguageCode(String value) {
+    final normalized = value.trim().toLowerCase().split(RegExp('[-_]')).first;
+    return normalized.isEmpty ? 'en' : normalized;
   }
 
   Future<void> setDisplayName(String value) async {
