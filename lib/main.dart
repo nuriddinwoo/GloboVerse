@@ -26,13 +26,12 @@ Future<void> main() async {
   l10n.addListener(() => L10nStateCode.current = l10n.code);
 
   final auth = AuthService(settings);
-  final session = SessionService(settings)
-    ..refreshVip()
-    ..resume();
+  final session = SessionService(settings)..resume();
   final billing = BillingService(settings)
-    ..onEntitlementsChanged = session.syncVerifiedEntitlements;
+    ..onBeforeVerifiedGrant = session.prepareForVerifiedGrant
+    ..onAfterVerifiedGrant = session.syncVerifiedPurchaseEntitlements;
   final entitlementReconciliation = EntitlementReconciliationService(settings)
-    ..onEntitlementsChanged = session.syncVerifiedEntitlements;
+    ..onEntitlementsChanged = session.syncAuthoritativeVip;
   billing.onReconciliationRequested = entitlementReconciliation.refresh;
   final translation = TranslationService();
   final online = OnlineService();

@@ -24,6 +24,9 @@ enum BillingStatus {
 
 enum OfferKind { consumable, subscription }
 
+typedef VerifiedGrantAppliedCallback =
+    Future<void> Function(VerifiedPurchaseGrant grant, bool wasApplied);
+
 class BillingOffer {
   const BillingOffer({
     required this.id,
@@ -83,6 +86,8 @@ class BillingService extends ChangeNotifier {
   bool _initialized = false;
   bool _isRestoring = false;
   bool _isDisposed = false;
+  Future<void> Function()? onBeforeVerifiedGrant;
+  VerifiedGrantAppliedCallback? onAfterVerifiedGrant;
   void Function()? onEntitlementsChanged;
   Future<void> Function()? onReconciliationRequested;
 
@@ -364,10 +369,12 @@ class BillingService extends ChangeNotifier {
           _status = BillingStatus.verificationPending;
           return _DeliveryOutcome.retry;
         case PurchaseVerificationDecision.verified:
-          await _settings.applyVerifiedPurchaseGrant(
+          await onBeforeVerifiedGrant?.call();
+          final wasApplied = await _settings.applyVerifiedPurchaseGrant(
             result.grant!,
             result.snapshot!,
           );
+          await onAfterVerifiedGrant?.call(result.grant!, wasApplied);
           _notifyEntitlementsChanged();
           _status = BillingStatus.success;
           return _DeliveryOutcome.verified;
@@ -383,8 +390,8 @@ class BillingService extends ChangeNotifier {
     try {
       onEntitlementsChanged?.call();
     } catch (_) {
-      // Entitlement persistence succeeded; observer failures must not leave a
-      // verified store transaction unfinished.
+      // The grant and post-grant session state are already durable. A view
+      // observer must not leave the verified store transaction unfinished.
     }
   }
 
@@ -430,6 +437,8 @@ class BillingService extends ChangeNotifier {
   @override
   void dispose() {
     _isDisposed = true;
+    onBeforeVerifiedGrant = null;
+    onAfterVerifiedGrant = null;
     onEntitlementsChanged = null;
     onReconciliationRequested = null;
     final subscription = _purchaseSubscription;

@@ -40,6 +40,7 @@ class SettingsService extends ChangeNotifier {
   int _entitlementRevision = 0;
   DateTime? _authoritativeVipUntil;
   Future<void> _remainingWrite = Future<void>.value();
+  Future<void> _sessionWrite = Future<void>.value();
   Future<void> _vipWrite = Future<void>.value();
   Future<void> _entitlementOperations = Future<void>.value();
   int _pendingEntitlementOperations = 0;
@@ -50,6 +51,7 @@ class SettingsService extends ChangeNotifier {
   bool get notificationsEnabled => _notificationsEnabled;
   int get remainingSeconds => _remainingSeconds;
   DateTime? get vipUntil => _vipUntil;
+  DateTime? get authoritativeVipUntil => _authoritativeVipUntil;
   bool get sessionWasActive => _sessionWasActive;
   DateTime? get sessionUpdatedAt => _sessionUpdatedAt;
   int get entitlementRevision => _entitlementRevision;
@@ -165,8 +167,11 @@ class SettingsService extends ChangeNotifier {
     await _preferences?.setBool(_notificationsKey, value);
   }
 
+  Future<void> waitForEntitlementOperations() => _entitlementOperations;
+
   Future<bool> persistRemainingAfterUsage(int value) async {
-    if (_preferences == null ||
+    final preferences = _preferences;
+    if (preferences == null ||
         _pendingEntitlementOperations > 0 ||
         value < 0 ||
         value > _remainingSeconds) {
@@ -175,7 +180,9 @@ class SettingsService extends ChangeNotifier {
     final safeValue = value;
     _remainingSeconds = safeValue;
     final write = _remainingWrite.then((_) async {
-      await _preferences?.setInt(_remainingSecondsKey, safeValue);
+      if (!await preferences.setInt(_remainingSecondsKey, safeValue)) {
+        throw StateError('Could not persist consumed session time.');
+      }
     });
     _remainingWrite = write.catchError((Object _) {});
     await write;
@@ -630,16 +637,26 @@ class SettingsService extends ChangeNotifier {
     required bool active,
     required DateTime updatedAt,
   }) async {
-    _sessionWasActive = active;
-    _sessionUpdatedAt = updatedAt;
-    await Future.wait([
-      _preferences?.setBool(_sessionActiveKey, active) ?? Future.value(true),
-      _preferences?.setInt(
-            _sessionUpdatedAtKey,
-            updatedAt.millisecondsSinceEpoch,
-          ) ??
-          Future.value(true),
-    ]);
+    final preferences = _preferences;
+    if (preferences == null) {
+      throw StateError('Settings must be initialized before saving a session.');
+    }
+    final write = _sessionWrite.then((_) async {
+      final persisted = await Future.wait([
+        preferences.setBool(_sessionActiveKey, active),
+        preferences.setInt(
+          _sessionUpdatedAtKey,
+          updatedAt.millisecondsSinceEpoch,
+        ),
+      ]);
+      if (persisted.any((value) => !value)) {
+        throw StateError('Could not persist the session state.');
+      }
+      _sessionWasActive = active;
+      _sessionUpdatedAt = updatedAt;
+    });
+    _sessionWrite = write.catchError((Object _) {});
+    await write;
   }
 }
 

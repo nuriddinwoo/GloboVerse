@@ -281,7 +281,17 @@ void main() {
       ),
     );
     final billing = BillingService(settings, store: store, verifier: verifier);
+    var preGrantFlushes = 0;
+    var postGrantFlushes = 0;
     var entitlementNotifications = 0;
+    billing.onBeforeVerifiedGrant = () async {
+      preGrantFlushes += 1;
+    };
+    billing.onAfterVerifiedGrant = (grant, wasApplied) async {
+      expect(grant.verificationId, 'google:trusted-order-1');
+      expect(wasApplied, postGrantFlushes == 0);
+      postGrantFlushes += 1;
+    };
     billing.onEntitlementsChanged = () => entitlementNotifications += 1;
     addTearDown(() async {
       billing.dispose();
@@ -318,6 +328,8 @@ void main() {
     expect(settings.hasAppliedVerifiedGrant('google:trusted-order-1'), isTrue);
     expect(store.finishedPurchases, hasLength(1));
     expect(store.finishedConsumableFlags, [isTrue]);
+    expect(preGrantFlushes, 2);
+    expect(postGrantFlushes, 2);
     expect(entitlementNotifications, 2);
   });
 
@@ -531,6 +543,95 @@ void main() {
     expect(settings.hasAppliedVerifiedGrant('google:capacity-retry'), isFalse);
     expect(settings.entitlementRevision, 11);
     expect(store.finishedPurchases, isEmpty);
+  });
+
+  test(
+    'a failed pre-grant usage flush leaves the purchase retryable',
+    () async {
+      final settings = SettingsService();
+      await settings.init();
+      final initialSeconds = settings.remainingSeconds;
+      final store = _FakeBillingStore();
+      final billing = BillingService(
+        settings,
+        store: store,
+        verifier: _FakePurchaseVerifier(
+          result: PurchaseVerificationResult.verified(
+            VerifiedPurchaseGrant.sessionTime(
+              verificationId: 'google:flush-retry',
+              productId: BillingProductIds.hourPass,
+              seconds: 3600,
+            ),
+            _snapshot(revision: 12),
+          ),
+        ),
+      );
+      billing.onBeforeVerifiedGrant = () async {
+        throw StateError('Session usage could not be persisted.');
+      };
+      addTearDown(() async {
+        billing.dispose();
+        await store.close();
+      });
+
+      await billing.init();
+      final handled = _nextStatus(billing, BillingStatus.verificationError);
+      store.emit([_purchase()]);
+      await handled;
+
+      expect(settings.remainingSeconds, initialSeconds);
+      expect(settings.hasAppliedVerifiedGrant('google:flush-retry'), isFalse);
+      expect(store.finishedPurchases, isEmpty);
+    },
+  );
+
+  test('a failed post-grant session flush leaves delivery retryable', () async {
+    final settings = SettingsService();
+    await settings.init();
+    final initialSeconds = settings.remainingSeconds;
+    final store = _FakeBillingStore(expectedFinishes: 1);
+    final grant = VerifiedPurchaseGrant.sessionTime(
+      verificationId: 'google:post-flush-retry',
+      productId: BillingProductIds.hourPass,
+      seconds: 3600,
+    );
+    final billing = BillingService(
+      settings,
+      store: store,
+      verifier: _FakePurchaseVerifier(
+        result: PurchaseVerificationResult.verified(
+          grant,
+          _snapshot(revision: 13),
+        ),
+      ),
+    );
+    var failPostGrantFlush = true;
+    billing.onAfterVerifiedGrant = (_, _) async {
+      if (failPostGrantFlush) {
+        throw StateError('Post-grant session state was not persisted.');
+      }
+    };
+    addTearDown(() async {
+      billing.dispose();
+      await store.close();
+    });
+
+    await billing.init();
+    final failed = _nextStatus(billing, BillingStatus.verificationError);
+    store.emit([_purchase()]);
+    await failed;
+
+    expect(settings.remainingSeconds, initialSeconds + 3600);
+    expect(settings.hasAppliedVerifiedGrant(grant.verificationId), isTrue);
+    expect(store.finishedPurchases, isEmpty);
+
+    failPostGrantFlush = false;
+    store.emit([_purchase()]);
+    await store.expectedFinishes;
+
+    expect(settings.remainingSeconds, initialSeconds + 3600);
+    expect(store.finishedPurchases, hasLength(1));
+    expect(store.finishedConsumableFlags, [isTrue]);
   });
 
   test(

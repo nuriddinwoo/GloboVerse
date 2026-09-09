@@ -200,7 +200,7 @@ const Map<String, Map<String, String>> _strings = {
     'purchaseVerificationFailed':
         'The verification server rejected this purchase. No time or VIP access was added. Contact support if you were charged.',
     'purchaseVerificationError':
-        'Verification could not finish right now. The purchase was left unfinished and no access was added. Restore purchases to retry.',
+        'Purchase processing could not finish. The store item remains unfinished for retry; any verified access already saved will not be added twice.',
     'purchaseSuccess': 'Purchase verified. Your access is up to date.',
     'stripeCheckout': 'Pay securely on the web',
     'noResults': 'No languages found',
@@ -355,7 +355,7 @@ const Map<String, Map<String, String>> _strings = {
     'purchaseVerificationFailed':
         'Сервери санҷиш ин харидро рад кард. Вақт ё VIP илова нашуд. Агар маблағ гирифта шуда бошад, бо дастгирӣ тамос гиред.',
     'purchaseVerificationError':
-        'Санҷиш ҳоло анҷом нашуд. Харид нотамом мондааст ва дастрасӣ илова нашуд. Барои кӯшиши дигар харидҳоро барқарор кунед.',
+        'Коркарди харид анҷом наёфт. Харид барои кӯшиши дубора нотамом монд; дастрасии тасдиқшудаи сабтшуда бори дуюм илова намешавад.',
     'purchaseSuccess': 'Харид тасдиқ шуд. Дастрасии шумо нав аст.',
     'stripeCheckout': 'Пардохти бехатар дар веб',
     'noResults': 'Забон ёфт нашуд',
@@ -490,7 +490,7 @@ const Map<String, Map<String, String>> _strings = {
     'purchaseVerificationFailed':
         'Сервер проверки отклонил покупку. Время или VIP-доступ не добавлены. Если списали деньги, обратитесь в поддержку.',
     'purchaseVerificationError':
-        'Проверку сейчас завершить не удалось. Покупка оставлена незавершённой, доступ не добавлен. Восстановите покупки для повтора.',
+        'Обработку покупки завершить не удалось. Товар остаётся незавершённым для повтора; уже сохранённый подтверждённый доступ не будет добавлен дважды.',
     'purchaseSuccess': 'Покупка подтверждена. Ваш доступ обновлён.',
     'stripeCheckout': 'Безопасная оплата в интернете',
     'noResults': 'Языки не найдены',
@@ -626,7 +626,7 @@ const Map<String, Map<String, String>> _strings = {
     'purchaseVerificationFailed':
         'Tekshiruv serveri bu xaridni rad etdi. Vaqt yoki VIP qo‘shilmadi. Pul yechilgan bo‘lsa, yordam xizmatiga murojaat qiling.',
     'purchaseVerificationError':
-        'Tekshiruvni hozir yakunlab bo‘lmadi. Xarid yakunlanmagan holda qoldi va ruxsat qo‘shilmadi. Qayta urinish uchun xaridlarni tiklang.',
+        'Xaridni qayta ishlash yakunlanmadi. Mahsulot qayta urinish uchun tugallanmagan qoladi; saqlangan tasdiqlangan ruxsat ikki marta qo‘shilmaydi.',
     'purchaseSuccess': 'Xarid tasdiqlandi. Ruxsatingiz yangilandi.',
     'stripeCheckout': 'Internetda xavfsiz to‘lash',
     'noResults': 'Til topilmadi',

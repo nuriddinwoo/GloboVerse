@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
+import 'purchase_verification_service.dart';
 import 'settings_service.dart';
 
 class SessionService extends ChangeNotifier with WidgetsBindingObserver {
   SessionService(this._settings, {DateTime Function()? now})
     : _now = now ?? DateTime.now,
-      _remaining = Duration(seconds: _settingsSafeSeconds(_settings)) {
+      _remaining = Duration(seconds: _settingsSafeSeconds(_settings)),
+      _knownVipUntil = _settings.vipUntil {
     _lastTick = _now();
     WidgetsBinding.instance.addObserver(this);
   }
@@ -17,6 +19,7 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
   final SettingsService _settings;
   final DateTime Function() _now;
   Duration _remaining;
+  DateTime? _knownVipUntil;
   Timer? _timer;
   late DateTime _lastTick;
   int _ticksSinceSave = 0;
@@ -24,7 +27,11 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
 
   Duration get remaining => _remaining;
   bool get isActive => _isActive;
-  bool get isVip => _settings.vipUntil?.isAfter(_now()) ?? false;
+  bool get isVip {
+    final vipUntil = _knownVipUntil;
+    return vipUntil != null && vipUntil.isAfter(_now());
+  }
+
   bool get canStart => isVip || _remaining.inSeconds > 0;
 
   static int _settingsSafeSeconds(SettingsService settings) {
@@ -32,26 +39,34 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void refreshVip() {
-    final expired = _settings.vipUntil?.isBefore(_now()) ?? false;
-    if (expired) unawaited(_settings.clearExpiredVip(_now()));
+    _clearExpiredVip(_now());
     notifyListeners();
   }
 
   void resume() {
-    if (!_settings.sessionWasActive) return;
     final now = _now();
-    final lastUpdate = _settings.sessionUpdatedAt;
-    if (!isVip && lastUpdate != null) {
-      final elapsed = now.difference(lastUpdate);
-      if (!elapsed.isNegative) {
-        _remaining = Duration(
-          seconds: (_remaining.inSeconds - elapsed.inSeconds).clamp(
-            0,
-            _maximumRemainingSeconds,
-          ),
-        );
-      }
+    if (!_settings.sessionWasActive) {
+      _lastTick = now;
+      _clearExpiredVip(now);
+      notifyListeners();
+      return;
     }
+
+    final lastUpdate = _settings.sessionUpdatedAt;
+    if (lastUpdate != null) {
+      final storedVipDeadline = _settings.authoritativeVipUntil;
+      final expiredVipDeadline =
+          storedVipDeadline != null && !storedVipDeadline.isAfter(now)
+          ? storedVipDeadline
+          : null;
+      _consumeElapsed(
+        lastUpdate,
+        now,
+        vipDeadline: _knownVipUntil ?? expiredVipDeadline,
+      );
+    }
+    _lastTick = now;
+    _clearExpiredVip(now);
     start();
   }
 
@@ -81,10 +96,65 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  void syncVerifiedEntitlements() {
-    _remaining = Duration(seconds: _settingsSafeSeconds(_settings));
-    final expired = _settings.vipUntil?.isBefore(_now()) ?? false;
-    if (expired) unawaited(_settings.clearExpiredVip(_now()));
+  /// Flushes locally consumed time before a trusted grant computes its target.
+  Future<void> prepareForVerifiedGrant() async {
+    if (_isActive) {
+      _applyElapsed();
+    } else {
+      _lastTick = _now();
+    }
+
+    var persisted = await _persistState();
+    if (!persisted) {
+      await _settings.waitForEntitlementOperations();
+      persisted = await _persistState();
+    }
+    if (!persisted) {
+      throw StateError('Could not persist session usage before a grant.');
+    }
+  }
+
+  /// Merges the trusted post-grant delta with usage since the pre-grant flush.
+  Future<void> syncVerifiedPurchaseEntitlements(
+    VerifiedPurchaseGrant grant,
+    bool wasApplied,
+  ) async {
+    if (_isActive) {
+      _applyElapsed();
+    } else {
+      _lastTick = _now();
+    }
+    if (wasApplied && grant.sessionSeconds != null) {
+      _remaining = Duration(
+        seconds: (_remaining.inSeconds + grant.sessionSeconds!).clamp(
+          0,
+          _maximumRemainingSeconds,
+        ),
+      );
+    }
+    _knownVipUntil = _settings.vipUntil;
+    _clearExpiredVip(_lastTick);
+    notifyListeners();
+
+    var persisted = await _persistState();
+    if (!persisted) {
+      await _settings.waitForEntitlementOperations();
+      persisted = await _persistState();
+    }
+    if (!persisted) {
+      throw StateError('Could not persist the post-grant session balance.');
+    }
+  }
+
+  /// Applies authoritative VIP changes without resetting unsaved countdown use.
+  void syncAuthoritativeVip() {
+    if (_isActive) {
+      _applyElapsed();
+    } else {
+      _lastTick = _now();
+    }
+    _knownVipUntil = _settings.vipUntil;
+    _clearExpiredVip(_lastTick);
     notifyListeners();
   }
 
@@ -101,43 +171,80 @@ class SessionService extends ChangeNotifier with WidgetsBindingObserver {
 
   void _applyElapsed() {
     final now = _now();
-    if (!isVip) {
-      final elapsed = now.difference(_lastTick).inSeconds;
-      if (elapsed > 0) {
-        _remaining = Duration(
-          seconds: (_remaining.inSeconds - elapsed).clamp(
-            0,
-            _maximumRemainingSeconds,
-          ),
-        );
-      }
-      if (_remaining == Duration.zero) {
-        _isActive = false;
-        _timer?.cancel();
-        _timer = null;
-      }
-    }
+    _consumeElapsed(_lastTick, now);
     _lastTick = now;
+    _clearExpiredVip(now);
+  }
+
+  void _consumeElapsed(
+    DateTime startedAt,
+    DateTime endedAt, {
+    DateTime? vipDeadline,
+  }) {
+    if (!endedAt.isAfter(startedAt)) return;
+
+    var chargeFrom = startedAt;
+    final vipUntil = vipDeadline ?? _knownVipUntil;
+    if (vipUntil != null) {
+      if (vipUntil.isAfter(endedAt) || vipUntil.isAtSameMomentAs(endedAt)) {
+        return;
+      }
+      if (vipUntil.isAfter(chargeFrom)) chargeFrom = vipUntil;
+    }
+
+    final elapsedSeconds = endedAt.difference(chargeFrom).inSeconds;
+    if (elapsedSeconds <= 0) return;
+    _remaining = Duration(
+      seconds: (_remaining.inSeconds - elapsedSeconds).clamp(
+        0,
+        _maximumRemainingSeconds,
+      ),
+    );
+    if (_remaining == Duration.zero) {
+      _isActive = false;
+      _timer?.cancel();
+      _timer = null;
+    }
+  }
+
+  void _clearExpiredVip(DateTime now) {
+    final vipUntil = _knownVipUntil;
+    if (vipUntil == null || vipUntil.isAfter(now)) return;
+    _knownVipUntil = null;
+    unawaited(_settings.clearExpiredVip(now));
+  }
+
+  Future<bool> _persistState() async {
+    final now = _now();
+    final persisted = await _settings.persistRemainingAfterUsage(
+      _remaining.inSeconds,
+    );
+    if (!persisted) return false;
+    await _settings.setSessionState(active: _isActive, updatedAt: now);
+    return true;
   }
 
   Future<void> _saveState() async {
-    final now = _now();
-    await _settings.persistRemainingAfterUsage(_remaining.inSeconds);
-    await _settings.setSessionState(active: _isActive, updatedAt: now);
+    try {
+      if (!await _persistState()) {
+        await _settings.waitForEntitlementOperations();
+        await _persistState();
+      }
+    } catch (_) {
+      // A later tick/lifecycle transition retries convenience persistence.
+    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.detached) {
+    if (state == AppLifecycleState.resumed) {
       if (_isActive) {
         _applyElapsed();
-        unawaited(_saveState());
+        notifyListeners();
       }
-    } else if (state == AppLifecycleState.resumed && _isActive) {
+    } else if (_isActive) {
       _applyElapsed();
-      notifyListeners();
+      unawaited(_saveState());
     }
   }
 
