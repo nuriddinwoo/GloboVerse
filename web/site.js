@@ -1,6 +1,13 @@
-const hostedPath = location.hostname.endsWith('github.io')
+const isGitHubPages = location.hostname.endsWith('github.io');
+const isRawGitHack = location.hostname === 'raw.githack.com';
+const rawBase = isRawGitHack
+  ? location.pathname.match(/^\/[^/]+\/[^/]+\/[^/]+\/web/)?.[0] || ''
+  : '';
+const hostedPath = isGitHubPages
   ? location.pathname.replace(/^\/GloboVerse/, '')
-  : location.pathname;
+  : isRawGitHack
+    ? location.pathname.replace(rawBase, '')
+    : location.pathname;
 const path = hostedPath.replace(/\/$/, '') || '/';
 
 const nav = `
@@ -46,9 +53,10 @@ ${[['01','⌘','AI Solutions','Smart tools and AI-powered experiences for modern
 
 document.getElementById('app').innerHTML = `<div class="noise"></div>${nav}${pages[path] || pages['/']}${footer}`;
 // GitHub project pages are hosted below /GloboVerse; keep local preview URLs clean.
-if (location.hostname.endsWith('github.io')) {
+if (isGitHubPages || isRawGitHack) {
+  const base = isGitHubPages ? '/GloboVerse' : rawBase;
   document.querySelectorAll('a[href^="/"]').forEach(link => {
-    link.href = `/GloboVerse${link.getAttribute('href')}`;
+    link.href = `${base}${link.getAttribute('href')}`;
   });
 }
 document.querySelector('.menu')?.addEventListener('click',()=>document.querySelector('.links').classList.toggle('open'));
