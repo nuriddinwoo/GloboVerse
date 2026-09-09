@@ -25,7 +25,7 @@ const footer = `<footer>
     <div class="footer-brand"><a class="brand" href="/"><span class="brand-dot"></span>TAJ AL</a><p>AI & Digital Studio<br>Building digital products from Tajikistan to the world.</p></div>
     <div class="footer-col"><b>Explore</b><a href="/services">Services</a><a href="/products">Products</a><a href="/projects">Projects</a><a href="/about">About</a></div>
     <div class="footer-col"><b>Company</b><a href="/contact">Contact</a><a href="/process">Process</a><a href="/faq">FAQ</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a></div>
-    <div class="footer-col"><b>Connect</b><a href="mailto:tajalsupport@gmail.com">Email</a><a href="#">Instagram ↗</a></div>
+    <div class="footer-col"><b>Connect</b><a href="mailto:tajalsupport@gmail.com">tajalsupport@gmail.com</a><a href="https://www.instagram.com/tajal.ai?stkn=dTVyejN0OTNycHN3" target="_blank" rel="noopener noreferrer">Instagram @tajal.ai ↗</a></div>
   </div>
   <div class="footer-bottom"><span>© 2026 Taj Al. All rights reserved.</span><span>A Taj Al Product.</span></div>
 </footer>`;

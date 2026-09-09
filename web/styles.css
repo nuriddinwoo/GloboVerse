@@ -39,3 +39,16 @@
   .links>a:not(.cta):active{background:#181815}
   .links .cta{min-height:56px;margin-top:6px;border-radius:16px}
 }
+
+/* Refined mobile CTA language */
+.cta{border-radius:999px;min-height:58px;padding-inline:26px}
+.actions .cta{border-radius:999px}
+.actions .cta:first-child:after{border-radius:50%}
+.links .cta{border-radius:999px}
+@media(max-width:560px){
+  .hero h1{font-size:clamp(50px,14vw,68px);line-height:.98}
+  .actions .cta{min-height:62px;font-size:16px}
+  .actions .cta:first-child:before{font-size:16px}
+  .footer-col a{overflow-wrap:anywhere}
+  .statement h2{letter-spacing:-2.5px}
+}
