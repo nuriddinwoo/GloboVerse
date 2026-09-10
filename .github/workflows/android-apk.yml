@@ -1,0 +1,179 @@
+name: Android build (APK + AAB)
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_release:
+        description: "Build the signed release APK + AAB"
+        type: boolean
+        default: true
+      build_debug:
+        description: "Build a debug APK (faster installs, not for Play)"
+        type: boolean
+        default: true
+      discovery_api_url:
+        description: "GLOBOVERSE_DISCOVERY_API_URL (empty = on-device preview data)"
+        required: false
+        default: ""
+      chat_api_url:
+        description: "GLOBOVERSE_CHAT_API_URL (empty = GloboGuide preview chat)"
+        required: false
+        default: ""
+      billing_api_url:
+        description: "GLOBOVERSE_BILLING_API_URL (empty = purchases fail closed)"
+        required: false
+        default: ""
+      translation_api_url:
+        description: "TRANSLATION_API_URL (empty = offline phrase preview)"
+        required: false
+        default: ""
+
+  push:
+    branches: [main]
+    paths:
+      - "lib/**"
+      - "assets/**"
+      - "pubspec.yaml"
+      - "android/**"
+      - ".github/workflows/android-apk.yml"
+      - ".github/scripts/ensure-keystore.sh"
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FLUTTER_CHANNEL: stable
+
+jobs:
+  android:
+    name: Flutter -> APK / AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      APK_KEYSTORE_B64: ${{ secrets.APK_KEYSTORE }}
+      APK_STORE_PASSWORD: ${{ secrets.APK_STORE_PASSWORD }}
+      APK_KEY_PASSWORD: ${{ secrets.APK_KEY_PASSWORD }}
+      APK_KEY_ALIAS: ${{ secrets.APK_KEY_ALIAS }}
+      APP_API_TOKEN: ${{ secrets.GLOBOVERSE_API_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+      DISCOVERY_API_URL: ${{ github.event.inputs.discovery_api_url }}
+      CHAT_API_URL: ${{ github.event.inputs.chat_api_url }}
+      BILLING_API_URL: ${{ github.event.inputs.billing_api_url }}
+      TRANSLATION_API_URL: ${{ github.event.inputs.translation_api_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          cache: true
+
+      - name: Toolchain versions
+        run: |
+          flutter --version
+          java -version
+          echo "GRADLE_USER_HOME=$GRADLE_USER_HOME" || true
+
+      - name: Restore Gradle cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/build.gradle.kts', 'android/gradle/wrapper/gradle-wrapper.properties', 'pubspec.yaml') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      - name: Static analysis (advisory)
+        continue-on-error: true
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Tests (advisory)
+        continue-on-error: true
+        run: flutter test --reporter expanded
+
+      - name: Ensure release signing key
+        run: bash .github/scripts/ensure-keystore.sh
+
+      - name: Build
+        id: build
+        run: |
+          set -euo pipefail
+          DEFINES=()
+          [ -n "${DISCOVERY_API_URL:-}" ] && DEFINES+=(--dart-define=GLOBOVERSE_DISCOVERY_API_URL="$DISCOVERY_API_URL")
+          [ -n "${CHAT_API_URL:-}" ] && DEFINES+=(--dart-define=GLOBOVERSE_CHAT_API_URL="$CHAT_API_URL")
+          [ -n "${BILLING_API_URL:-}" ] && DEFINES+=(--dart-define=GLOBOVERSE_BILLING_API_URL="$BILLING_API_URL")
+          [ -n "${TRANSLATION_API_URL:-}" ] && DEFINES+=(--dart-define=TRANSLATION_API_URL="$TRANSLATION_API_URL")
+          [ -n "${APP_API_TOKEN:-}" ] && DEFINES+=(--dart-define=GLOBOVERSE_API_TOKEN="$APP_API_TOKEN")
+          echo "dart-define args: ${#DEFINES[@]} (token value never printed)"
+
+          if [ "${{ inputs.build_debug || 'true' }}" != "false" ]; then
+            flutter build apk --debug "${DEFINES[@]}"
+          fi
+          if [ "${{ inputs.build_release || 'true' }}" != "false" ]; then
+            flutter build apk --release "${DEFINES[@]}"
+            flutter build appbundle --release "${DEFINES[@]}"
+          fi
+
+      - name: Collect outputs
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          APK_DIR=build/app/outputs/flutter-apk
+          [ -f "$APK_DIR/app-debug.apk" ] && cp "$APK_DIR/app-debug.apk" dist/GloboVerse-debug.apk || true
+          [ -f "$APK_DIR/app-release.apk" ] && cp "$APK_DIR/app-release.apk" dist/GloboVerse-release.apk || true
+          [ -f build/app/outputs/bundle/release/app-release.aab ] &&
+            cp build/app/outputs/bundle/release/app-release.aab dist/GloboVerse-release.aab || true
+          {
+            echo "GloboVerse Android build"
+            echo "- commit: ${GITHUB_SHA}"
+            echo "- branch: ${GITHUB_REF_NAME}"
+            echo "- run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo
+            echo "Install the APK directly on the phone (allow 'unknown sources'),"
+            echo "or upload the .aab to Google Play Console."
+          } > dist/RELEASE_INFO.txt
+          (cd dist && sha256sum *.apk *.aab 2>/dev/null > checksums.txt) || true
+          ls -la dist
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: globoverse-android
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 60
+
+      - name: Publish download release
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-latest
+          name: GloboVerse Android build (latest)
+          target_commitish: ${{ github.sha }}
+          body_path: dist/RELEASE_INFO.txt
+          files: |
+            dist/GloboVerse-debug.apk
+            dist/GloboVerse-release.apk
+            dist/GloboVerse-release.aab
+            dist/checksums.txt
+          overwrite_files: true
+          fail_on_unmatched_files: false
+          make_draft: false

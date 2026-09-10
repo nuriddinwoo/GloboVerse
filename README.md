@@ -41,6 +41,14 @@ flutter run -d android
 flutter run -d ios
 ```
 
+## Ready-made Android build
+
+No Android Studio needed: `.github/workflows/android-apk.yml` builds a signed APK and an AAB on
+a GitHub-hosted runner and publishes them to
+[Releases → `android-latest`](https://github.com/nuriddinwoo/GloboVerse/releases/tag/android-latest).
+Details, the signing key policy and what iOS requires: [docs/build_android.md](docs/build_android.md),
+[docs/build_ios.md](docs/build_ios.md).
+
 ## Optional runtime configuration
 
 Do not commit credentials. Supply optional build-time configuration with `--dart-define`:
