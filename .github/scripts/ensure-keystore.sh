@@ -90,5 +90,10 @@ else
   echo "::warning::Grant this workflow 'actions: write' or add the secrets manually."
 fi
 
-# The passwords must survive to the end of this job even if persisting failed.
-printf 'storePassword=%s\nkeyPassword=%s\n' "$STORE_PW" "$KEY_PW" >> "$GITHUB_STEP_SUMMARY" || true
+# NOTE: passwords are deliberately never echoed - run logs and job summaries are
+# public on this repository. They only exist in android/key.properties for this job.
+if [ "$ok" != "1" ]; then
+  echo "Keystore backup: download the 'globoverse-android' artifact is NOT signed-safe;"
+  echo "to keep this key, copy android/key.properties from the runner or add the four"
+  echo "APK_* secrets manually and re-run."
+fi
