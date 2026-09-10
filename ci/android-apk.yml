@@ -1,5 +1,8 @@
 name: Android build (APK + AAB)
 
+# Installed copy of this file must live at .github/workflows/android-apk.yml.
+# Run `bash ci/install-workflow.sh`, or create that file in the web UI and paste this content.
+
 on:
   workflow_dispatch:
     inputs:

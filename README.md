@@ -43,7 +43,8 @@ flutter run -d ios
 
 ## Ready-made Android build
 
-No Android Studio needed: `.github/workflows/android-apk.yml` builds a signed APK and an AAB on
+No Android Studio needed: [`ci/android-apk.yml`](ci/android-apk.yml) (installed once as
+`.github/workflows/android-apk.yml`) builds a signed APK and an AAB on
 a GitHub-hosted runner and publishes them to
 [Releases → `android-latest`](https://github.com/nuriddinwoo/GloboVerse/releases/tag/android-latest).
 Details, the signing key policy and what iOS requires: [docs/build_android.md](docs/build_android.md),

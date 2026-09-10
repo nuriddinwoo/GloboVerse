@@ -1,7 +1,24 @@
 # Android builds (APK / AAB)
 
-Everything here is automated by [`.github/workflows/android-apk.yml`](../.github/workflows/android-apk.yml).
-The build runs on a GitHub-hosted runner, so no local Android SDK is required to get an APK.
+The build definition is [`ci/android-apk.yml`](../ci/android-apk.yml). It has to be installed once
+as `.github/workflows/android-apk.yml`, because GitHub only runs workflows from that directory and
+the Arena GitHub App is not permitted to write it (see "Install it" below). The build itself runs on
+a GitHub-hosted runner, so no local Android Studio/SDK is required to get an APK.
+
+## Install the workflow (one time, ~30 seconds)
+
+Option A - GitHub web UI, no terminal:
+
+1. Open <https://github.com/nuriddinwoo/GloboVerse/new/arena/01a089a3-globoverse?filename=.github/workflows/android-apk.yml>
+2. Open [`ci/android-apk.yml`](../ci/android-apk.yml) in another tab, press **Copy raw**, paste it in
+   the editor and name the file exactly `android-apk.yml` (the path is already pre-filled).
+3. **Commit** to that branch. Actions picks it up and the first run starts immediately.
+
+Option B - terminal (needs `gh` authenticated as you):
+
+```bash
+bash ci/install-workflow.sh
+```
 
 ## Get the finished files
 
